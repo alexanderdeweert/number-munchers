@@ -3,18 +3,19 @@ import Image from "next/image";
 import { SetStateAction, useState } from "react";
 import styles from "../styles/Home.module.css";
 import { useRouter } from "next/router";
+import { ParsedUrlQueryInput } from "querystring";
 
 export default function Home() {
   enum GameType {
-    Sum = "sum",
     Multiples = "multiples",
-    Multiply = "multiply",
-    Divide = "divide",
+    Factors = "factors",
+    Primes = "primes",
+    Equality = "equality",
+    Inequality = "inequality",
   }
+
   const [name, setName] = useState("");
-  const [gameType, setGameType] = useState(GameType.Sum);
-  const [rangeFrom, setRangeFrom] = useState(1);
-  const [rangeTo, setRangeTo] = useState(10);
+  const [gameType, setGameType] = useState(GameType.Multiples);
   const router = useRouter();
 
   function handleNameInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -26,30 +27,14 @@ export default function Home() {
   function getCapitalizedFirstCharString(s: String): String {
     return s[0].toUpperCase().concat(s.substring(1));
   }
-  function handleRangeFromChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setValidRangeNumber(setRangeFrom, e);
-  }
-  function handleRangeToChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setValidRangeNumber(setRangeTo, e);
-  }
-  function setValidRangeNumber(
-    stateSetter: (value: SetStateAction<number>) => void,
-    e: React.ChangeEvent<HTMLInputElement>
-  ) {
-    const value = e.target.value;
-    if (isNaN(parseInt(value))) {
-      return stateSetter(0);
-    }
-    return stateSetter(parseInt(value));
-  }
 
   function handleStartClick() {
     return () => {
-      console.log(`~~~ start clicked: ${[name, gameType, rangeFrom, rangeTo]}`);
+      let params: ParsedUrlQueryInput = { name: name, gameType: gameType };
       router.push(
         {
           pathname: "play",
-          query: { a: "foo", b: "bar" },
+          query: params,
         },
         "play"
       );
@@ -66,10 +51,10 @@ export default function Home() {
       <div className="w-80">
         {/* Name Input */}
         <div className="name-input-container flex justify-left pt-2 mb-4">
-          <label className="text-white pr-2 mr-10">Name:</label>
+          <label className="text-white pr-2 mr-10">Nickname:</label>
           <input
             className="indent-2"
-            placeholder="Enter name"
+            placeholder="Enter nickname"
             value={name}
             onChange={handleNameInputChange}
           ></input>
@@ -79,35 +64,22 @@ export default function Home() {
         <div className="flex justify-left pt-2 mb-4">
           <label className="text-white pr-2 mr-10">Game Type:</label>
           <select value={gameType} onChange={handleSelectGameTypeChange}>
-            <option value={GameType.Sum}>
-              {getCapitalizedFirstCharString(GameType.Sum)}
-            </option>
             <option value={GameType.Multiples}>
               {getCapitalizedFirstCharString(GameType.Multiples)}
             </option>
-            <option value={GameType.Multiply}>
-              {getCapitalizedFirstCharString(GameType.Multiply)}
+            <option value={GameType.Factors}>
+              {getCapitalizedFirstCharString(GameType.Factors)}
             </option>
-            <option value={GameType.Divide}>
-              {getCapitalizedFirstCharString(GameType.Divide)}
+            <option value={GameType.Primes}>
+              {getCapitalizedFirstCharString(GameType.Primes)}
+            </option>
+            <option value={GameType.Equality}>
+              {getCapitalizedFirstCharString(GameType.Equality)}
+            </option>
+            <option value={GameType.Inequality}>
+              {getCapitalizedFirstCharString(GameType.Inequality)}
             </option>
           </select>
-        </div>
-
-        {/* Range */}
-        <div className="flex justify-left pt-2 mb-4">
-          <label className="text-white pr-2 mr-10">Range:</label>
-          <input
-            className="w-14 text-center"
-            value={rangeFrom}
-            onChange={handleRangeFromChange}
-          ></input>
-          <label className="text-white m-2">to</label>
-          <input
-            className="w-14 text-center"
-            value={rangeTo}
-            onChange={handleRangeToChange}
-          ></input>
         </div>
 
         {/* Start Button */}
