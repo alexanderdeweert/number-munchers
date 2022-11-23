@@ -1,7 +1,6 @@
 import Head from "next/head";
 import Image from "next/image";
 import { SetStateAction, useState } from "react";
-import styles from "../styles/Home.module.css";
 import { useRouter } from "next/router";
 import { ParsedUrlQueryInput } from "querystring";
 

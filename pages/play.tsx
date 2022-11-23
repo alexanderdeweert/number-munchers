@@ -1,6 +1,7 @@
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { interval, Subscription } from "rxjs";
+// import styles from "../styles/Home.module.css";
 
 export default function Play() {
   const timer = interval(128);
@@ -39,9 +40,18 @@ export default function Play() {
    * -
    */
 
+   //<h1>{router.query.a}</h1>
   return (
-    <div>
-      <h1>{router.query.a}</h1>
+    <div className="parent">
+      <div className="cell0 cell blue-cell">cell0</div>
+      <div className="cell1 cell red-cell">cell1</div>
+      <div className="cell2 cell blue-cell">cell2</div>
+      <div className="cell3 cell red-cell">cell3</div>
+      <div className="cell4 cell blue-cell">cell4</div>
+      <div className="cell5 cell red-cell">cell5</div>
+      <div className="cell6 cell blue-cell">cell6</div>
+      <div className="cell7 cell red-cell">cell7</div>
+      <div className="cell8 cell blue-cell">cell8</div>
     </div>
   );
 }
