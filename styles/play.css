@@ -16,6 +16,10 @@
     background-color: red;
     color: white;
   }
+  .purple-cell {
+    background-color: purple;
+    color: white;
+  }
   .cell0 {
     grid-row: 1 / 2;
     grid-column: 1 / 2;
