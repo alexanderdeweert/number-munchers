@@ -4,7 +4,7 @@ import boardReducer from './redux/board'
 export function makeStore() {
   return configureStore({
     reducer: { board: boardReducer },
-    devTools: true
+    devTools: process.env.NODE_ENV !== 'production',
   })
 }
 
