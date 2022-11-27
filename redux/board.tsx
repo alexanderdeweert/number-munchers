@@ -9,7 +9,8 @@ export interface BoardState {
   spaceButtonPressed: boolean;
   activeCell: [number, number];
   validInputKeys: Array<String | number>;
-  board: Array<Array<number | String>>;
+  board: Array<Array<number | String | undefined>>;
+  lives: number;
 }
 
 const initialState: BoardState = {
@@ -20,7 +21,8 @@ const initialState: BoardState = {
   spaceButtonPressed: false,
   activeCell: [0, 0],
   validInputKeys: ["w", "a", "s", "d", 32],
-  board: [[1]],
+  board: [[]],
+  lives: 5,
 };
 
 export const boardSlice = createSlice({
@@ -87,16 +89,25 @@ export const boardSlice = createSlice({
     },
     updateBoardValue: (
       state,
-      action: PayloadAction<{ row: number; column: number; value: number }>
+      action: PayloadAction<{
+        row: number;
+        column: number;
+        value: number | string | undefined;
+      }>
     ) => {
       state.board[action.payload.row][action.payload.column] =
         action.payload.value;
     },
     setBoard: (
       state,
-      action: PayloadAction<{ board: Array<Array<number | String>> }>
+      action: PayloadAction<{
+        board: Array<Array<number | String | undefined>>;
+      }>
     ) => {
       state.board = action.payload.board;
+    },
+    decrementLives: (state) => {
+      state.lives -= 1;
     },
   },
 });
@@ -118,5 +129,6 @@ export const {
   moveLeft,
   moveRight,
   setBoard,
+  decrementLives,
 } = boardSlice.actions;
 export default boardSlice.reducer;

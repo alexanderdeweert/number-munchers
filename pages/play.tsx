@@ -20,6 +20,7 @@ import {
   setSpaceButtonPressed,
   setSpaceButtonReleased,
   setBoard,
+  decrementLives,
 } from "../redux/board";
 import { AppState } from "../store";
 
@@ -57,6 +58,11 @@ export default function Play() {
   const validInputKeys = useSelector(
     (state: AppState) => state.board.validInputKeys
   );
+  const cellValue = useSelector(
+    (state: AppState) =>
+      state.board.board[state.board.activeCell[1]][state.board.activeCell[0]]
+  );
+  const numLives = useSelector((state: AppState) => state.board.lives);
 
   let keyPressedEventHandler = (event: any) => {
     if (event.key) {
@@ -83,9 +89,23 @@ export default function Play() {
         dispatch(moveRight());
       } else if (event.keyCode === 32 && !spaceButtonPressed) {
         dispatch(setSpaceButtonPressed());
-        let row = activeCellY;
-        let col = activeCellX;
-        dispatch(updateBoardValue({ row: row, column: col, value: 1 }));
+
+        if (gameType === "multiples") {
+          console.log(cellValue);
+          if (typeof cellValue == "number" && cellValue % 2 == 0) {
+            console.log(`MUNCHED an EVEN number: ${cellValue}`);
+            dispatch(
+              updateBoardValue({
+                row: activeCellY,
+                column: activeCellX,
+                value: undefined,
+              })
+            );
+          } else if (typeof cellValue !== "undefined") {
+            dispatch(decrementLives());
+          }
+        }
+        //dispatch(updateBoardValue({ row: row, column: col, value: 1 }));
       }
     }
   };
@@ -150,10 +170,10 @@ export default function Play() {
     //figure out how to store the redux state to localstorage to mitigate refresh
     //or direct link)
     let board: Array<Array<number | String>> = [];
-    for (let i = 0; i < (parsedRows ?? 3); i++) {
+    for (let i = 0; i < (parsedRows ?? 5); i++) {
       let row: Array<number | String> = [];
-      for (let j = 0; j < (parsedCols ?? 3); j++) {
-        row.push(Math.floor(1 + Math.random() * 10));
+      for (let j = 0; j < (parsedCols ?? 5); j++) {
+        row.push(Math.floor(1 + Math.random() * 100));
       }
       board.push(row);
     }
@@ -256,5 +276,10 @@ export default function Play() {
    */
 
   //<h1>{router.query.a}</h1>
-  return <div style={getParentStyle()}>{getBoardElements()}</div>;
+  return (
+    <div>
+      <div style={getParentStyle()}>{getBoardElements()}</div>
+      <h2 style={{ textAlign: "center", color: "white" }}>{numLives}</h2>
+    </div>
+  );
 }
