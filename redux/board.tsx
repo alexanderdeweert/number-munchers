@@ -1,68 +1,122 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { HYDRATE } from "next-redux-wrapper";
 
 export interface BoardState {
-    value: number,
-    buttonPressed: boolean,
-    activeCell: [number, number],
-    numRows: number,
-    numCols: number,
+  upButtonPressed: boolean;
+  downButtonPressed: boolean;
+  leftButtonPressed: boolean;
+  rightButtonPressed: boolean;
+  spaceButtonPressed: boolean;
+  activeCell: [number, number];
+  validInputKeys: Array<String | number>;
+  board: Array<Array<number | String>>;
 }
 
 const initialState: BoardState = {
-    value: 3,
-    buttonPressed: false,
-    activeCell: [0,0],
-    numRows: 3,
-    numCols: 3,
-}
+  upButtonPressed: false,
+  downButtonPressed: false,
+  leftButtonPressed: false,
+  rightButtonPressed: false,
+  spaceButtonPressed: false,
+  activeCell: [0, 0],
+  validInputKeys: ["w", "a", "s", "d", 32],
+  board: [[1]],
+};
 
 export const boardSlice = createSlice({
-    name: 'boardCounter',
-    initialState,
-    reducers: {
-        increment: (state) => {
-            state.value += 1
-        },
-        decrement: (state) => {
-            state.value -= 1
-        },
-        setButtonPressed: (state) => {
-            state.buttonPressed = true
-        },
-        setButtonReleased: (state) => {
-            state.buttonPressed = false
-        },
-        moveUp: (state) => {
-            let newYPositionValue = state.activeCell[1]-1
-            let newYPosition = newYPositionValue >= 0 ? newYPositionValue : state.activeCell[1]
-            state.activeCell = [state.activeCell[0], newYPosition]
-        },
-        moveDown: (state) => {
-            let newYPositionValue = state.activeCell[1]+1
-            let newYPosition = newYPositionValue < state.numRows ? newYPositionValue : state.activeCell[1]
-            state.activeCell = [state.activeCell[0], newYPosition]
-        },
-        moveLeft: (state) => {
-            let newXPositionValue = state.activeCell[0]-1
-            let newXPosition = newXPositionValue >= 0 ? newXPositionValue : state.activeCell[0]
-            state.activeCell = [newXPosition, state.activeCell[1]]
-        },
-        moveRight: (state) => {
-            let newXPositionValue = state.activeCell[0]+1
-            let newXPosition = newXPositionValue < state.numCols ? newXPositionValue : state.activeCell[0]
-            state.activeCell = [newXPosition, state.activeCell[1]]
-        },
+  name: "boardCounter",
+  initialState,
+  reducers: {
+    moveUp: (state) => {
+      let newYPositionValue = state.activeCell[1] - 1;
+      let newYPosition =
+        newYPositionValue >= 0 ? newYPositionValue : state.activeCell[1];
+      state.activeCell = [state.activeCell[0], newYPosition];
     },
-    extraReducers: {
-        [HYDRATE]: (state, action) => {
-            return {
-                ...state,
-                ...action.payload.auth,
-            };
-        },
+    moveDown: (state) => {
+      let newYPositionValue = state.activeCell[1] + 1;
+      let newYPosition =
+        newYPositionValue < state.board.length
+          ? newYPositionValue
+          : state.activeCell[1];
+      state.activeCell = [state.activeCell[0], newYPosition];
     },
-})
+    moveLeft: (state) => {
+      let newXPositionValue = state.activeCell[0] - 1;
+      let newXPosition =
+        newXPositionValue >= 0 ? newXPositionValue : state.activeCell[0];
+      state.activeCell = [newXPosition, state.activeCell[1]];
+    },
+    moveRight: (state) => {
+      let newXPositionValue = state.activeCell[0] + 1;
+      let newXPosition =
+        newXPositionValue < state.board[0].length
+          ? newXPositionValue
+          : state.activeCell[0];
+      state.activeCell = [newXPosition, state.activeCell[1]];
+    },
+    setUpButtonPressed: (state) => {
+      state.upButtonPressed = true;
+    },
+    setUpButtonReleased: (state) => {
+      state.upButtonPressed = false;
+    },
+    setDownButtonPressed: (state) => {
+      state.downButtonPressed = true;
+    },
+    setDownButtonReleased: (state) => {
+      state.downButtonPressed = false;
+    },
+    setLeftButtonPressed: (state) => {
+      state.leftButtonPressed = true;
+    },
+    setLeftButtonReleased: (state) => {
+      state.leftButtonPressed = false;
+    },
+    setRightButtonPressed: (state) => {
+      state.rightButtonPressed = true;
+    },
+    setRightButtonReleased: (state) => {
+      state.rightButtonPressed = false;
+    },
+    setSpaceButtonPressed: (state) => {
+      state.spaceButtonPressed = true;
+    },
+    setSpaceButtonReleased: (state) => {
+      state.spaceButtonPressed = false;
+    },
+    updateBoardValue: (
+      state,
+      action: PayloadAction<{ row: number; column: number; value: number }>
+    ) => {
+      state.board[action.payload.row][action.payload.column] =
+        action.payload.value;
+    },
+    setBoard: (
+      state,
+      action: PayloadAction<{ board: Array<Array<number | String>> }>
+    ) => {
+      state.board = action.payload.board;
+    },
+  },
+});
 
-export const { increment, decrement, setButtonPressed, setButtonReleased, moveUp, moveDown, moveLeft, moveRight } = boardSlice.actions
-export default boardSlice.reducer
+export const {
+  setUpButtonPressed,
+  setUpButtonReleased,
+  setDownButtonPressed,
+  setDownButtonReleased,
+  setLeftButtonPressed,
+  setLeftButtonReleased,
+  setRightButtonPressed,
+  setRightButtonReleased,
+  setSpaceButtonPressed,
+  setSpaceButtonReleased,
+  updateBoardValue,
+  moveUp,
+  moveDown,
+  moveLeft,
+  moveRight,
+  setBoard,
+} = boardSlice.actions;
+export default boardSlice.reducer;

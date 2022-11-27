@@ -1,103 +1,214 @@
 import { useRouter } from "next/router";
 import { Key, useCallback, useEffect, useState } from "react";
+import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { interval, Subscription } from "rxjs";
-import { increment, setButtonPressed, setButtonReleased, moveUp, moveDown, moveLeft, moveRight } from "../redux/board";
+import {
+  setUpButtonPressed,
+  setUpButtonReleased,
+  setDownButtonReleased,
+  setDownButtonPressed,
+  setRightButtonPressed,
+  setRightButtonReleased,
+  setLeftButtonPressed,
+  setLeftButtonReleased,
+  moveUp,
+  moveDown,
+  moveLeft,
+  moveRight,
+  updateBoardValue,
+  setSpaceButtonPressed,
+  setSpaceButtonReleased,
+  setBoard,
+} from "../redux/board";
 import { AppState } from "../store";
 // import styles from "../styles/Home.module.css";
 
 export default function Play() {
-
-  console.log("~~ new function")
+  console.log("~~ new function");
   // const boardCount = useSelector((state: AppState) => state.board.value)
-  const boardButtonPressed = useSelector((state: AppState) => state.board.buttonPressed)
-  const activeCellX = useSelector((state: AppState)=> state.board.activeCell[0])
-  const activeCellY = useSelector((state: AppState)=> state.board.activeCell[1])
+  const upButtonPressed = useSelector(
+    (state: AppState) => state.board.upButtonPressed
+  );
+  const downButtonPressed = useSelector(
+    (state: AppState) => state.board.downButtonPressed
+  );
+  const leftButtonPressed = useSelector(
+    (state: AppState) => state.board.leftButtonPressed
+  );
+  const rightButtonPressed = useSelector(
+    (state: AppState) => state.board.rightButtonPressed
+  );
+  const spaceButtonPressed = useSelector(
+    (state: AppState) => state.board.spaceButtonPressed
+  );
+  const activeCellX = useSelector(
+    (state: AppState) => state.board.activeCell[0]
+  );
+  const activeCellY = useSelector(
+    (state: AppState) => state.board.activeCell[1]
+  );
+  const validInputKeys = useSelector(
+    (state: AppState) => state.board.validInputKeys
+  );
+  const board = useSelector((state: AppState) => state.board.board);
   const dispatch = useDispatch();
-
-  // const timer = interval(128);
   const timer = interval(1000);
   const sub = new Subscription();
-  const [activeCellClass, setActiveCellClass] = useState('purple-cell')
-  // const [keyPressed, setKeyPressed] = useState({pressed: false})
-  // const [keyReleased, setKeyRelease] = useState(true)
-  const [activeCell, setActiveCell] = useState([0,0])
-
+  const [activeCellClass, setActiveCellClass] = useState("purple-cell");
+  const [tileWidth, setTileWidth] = useState(50);
+  const [tileHeight, setTileHeight] = useState(50);
 
   let keyPressedEventHandler = (event: any) => {
-    if(event.key) {
+    if (event.key) {
+      if (
+        !(
+          validInputKeys.includes(event.key) ||
+          validInputKeys.includes(event.keyCode)
+        )
+      ) {
+        return;
+      }
       event.preventDefault();
-      if(!boardButtonPressed) {
-        if(event.key === 'w') {
-          dispatch(setButtonPressed())
-          dispatch(moveUp())
-          console.log(`UP`)
-        }
-        else if(event.key === 's') {
-          dispatch(setButtonPressed())
-          dispatch(moveDown())
-          console.log(`DOWN`)
-        }
-        else if(event.key === 'a') {
-          dispatch(setButtonPressed())
-          dispatch(moveLeft())
-          console.log(`LEFT`)
-        }
-        else if(event.key === 'd') {
-          dispatch(setButtonPressed())
-          dispatch(moveRight())
-          console.log(`RIGHT`)
-        }
+      if (event.key === "w" && !upButtonPressed) {
+        dispatch(setUpButtonPressed());
+        dispatch(moveUp());
+      } else if (event.key === "s" && !downButtonPressed) {
+        dispatch(setDownButtonPressed());
+        dispatch(moveDown());
+      } else if (event.key === "a" && !leftButtonPressed) {
+        dispatch(setLeftButtonPressed());
+        dispatch(moveLeft());
+      } else if (event.key === "d" && !rightButtonPressed) {
+        dispatch(setRightButtonPressed());
+        dispatch(moveRight());
+      } else if (event.keyCode === 32 && !spaceButtonPressed) {
+        console.log("space");
+        dispatch(setSpaceButtonPressed());
+        let row = activeCellY;
+        let col = activeCellX;
+        dispatch(updateBoardValue({ row: row, column: col, value: 1 }));
       }
     }
-  }
+  };
 
   let keyReleasedEventHandler = (event: any) => {
-    if(event.key) {
-      event.preventDefault();
-      if(event.key === 'w') {
-        console.log(`~~ w RELEASED`)
-        dispatch(setButtonReleased())
+    if (event.key) {
+      if (
+        !(
+          validInputKeys.includes(event.key) ||
+          validInputKeys.includes(event.keyCode)
+        )
+      ) {
+        return;
       }
-      else if(event.key === 's') {
-        console.log(`~~ s RELEASED`)
-        dispatch(setButtonReleased())
-      }
-      else if(event.key === 'a') {
-        console.log(`~~ a RELEASED`)
-        dispatch(setButtonReleased())
-      }
-      else if(event.key === 'd') {
-        console.log(`~~ d RELEASED`)
-        dispatch(setButtonReleased())
+      if (event.key === "w") {
+        dispatch(setUpButtonReleased());
+      } else if (event.key === "s") {
+        dispatch(setDownButtonReleased());
+      } else if (event.key === "a") {
+        dispatch(setLeftButtonReleased());
+      } else if (event.key === "d") {
+        dispatch(setRightButtonReleased());
+      } else if (event.keyCode === 32) {
+        dispatch(setSpaceButtonReleased());
       }
     }
-  }
+  };
 
-  //Crude gameloop.
-  //7.5 fps is 128ms interval
+  //Input listeners
   useEffect(() => {
-    console.log("useEffect triggered")
-    // sub.add(
-    //   timer.subscribe((i) => {
-    //     console.log(`~~~ tick: ${i} cell0Class: ${cell0Class}`);
-    //     setCell0Class( i % 2 == 0 ? 'red-cell' : 'blue-cell')
-    //   })
-    // );
-    if(undefined !== window) {
-      window.addEventListener('keydown', keyPressedEventHandler)
-      window.addEventListener('keyup', keyReleasedEventHandler)
+    console.log("~~~ input listeners: useEffect triggered");
+
+    if (undefined !== window) {
+      window.addEventListener("keydown", keyPressedEventHandler);
+      window.addEventListener("keyup", keyReleasedEventHandler);
     }
 
     return () => {
-      console.log("~~~ cleanup")
-      // sub.unsubscribe();
-      window.removeEventListener('keydown', keyPressedEventHandler);
-      window.removeEventListener('keyup', keyReleasedEventHandler);
+      console.log("~~~ input listeners: cleanup");
+      window.removeEventListener("keydown", keyPressedEventHandler);
+      window.removeEventListener("keyup", keyReleasedEventHandler);
     };
   });
-  function setStylingIfActive(row: number, column: number, defaultClass: string) {
-    return activeCellX == column && activeCellY == row ? activeCellClass : defaultClass
+
+  //Board init
+  useEffect(() => {
+    dispatch(
+      setBoard({
+        board: [
+          [0, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0],
+        ],
+      })
+    );
+
+    sub.add(
+      timer.subscribe((i) => {
+        console.log(`~~~ tick: ${i}`);
+      })
+    );
+    console.log("---###--- board init: useEffect");
+
+    return () => {
+      console.log("---###--- board init: cleanup");
+      sub.unsubscribe();
+    };
+  }, []);
+
+  function setStylingIfActive(
+    row: number,
+    column: number,
+    defaultClass: string
+  ) {
+    return activeCellX == column && activeCellY == row
+      ? activeCellClass
+      : defaultClass;
+  }
+
+  function getParentStyle(): React.CSSProperties {
+    let cssProperties: React.CSSProperties = {};
+    cssProperties.display = "grid";
+    cssProperties.gridTemplateRows = board
+      .map((_e) => {
+        return `${tileHeight}px`;
+      })
+      .join(" ");
+    cssProperties.gridTemplateColumns = board[0]
+      .map((_e) => {
+        return `${tileWidth}px`;
+      })
+      .join(" ");
+    return cssProperties;
+  }
+
+  function getBoardElements() {
+    let results = [];
+    let cellCount = 0;
+    for (let i = 0; i < board.length; i++) {
+      const row = board[i];
+      for (let j = 0; j < row.length; j++) {
+        let element = row[j];
+        results.push(
+          <div
+            className={`cell ${setStylingIfActive(
+              i,
+              j,
+              (i + j + 1) % 2 == 0 ? "blue-cell" : "green-cell"
+            )}`}
+            style={{
+              gridRow: `${i + 1}/${i + 2}`,
+              gridColumn: `${j + 1}/${j + 2}`,
+            }}
+          >
+            {element}
+          </div>
+        );
+        cellCount++;
+      }
+    }
+    return results;
   }
   const router = useRouter();
   const { name, gameType } = router.query;
@@ -115,18 +226,6 @@ export default function Play() {
    * -
    */
 
-   //<h1>{router.query.a}</h1>
-  return (
-    <div className="parent">
-      <div className={`cell0 cell ${setStylingIfActive(0, 0, 'blue-cell')}`}>cell0</div>
-      <div className={`cell1 cell ${setStylingIfActive(0, 1, 'red-cell')}`}>cell1</div>
-      <div className={`cell2 cell ${setStylingIfActive(0, 2, 'blue-cell')}`}>cell2</div>
-      <div className={`cell3 cell ${setStylingIfActive(1, 0, 'red-cell')}`}>cell3</div>
-      <div className={`cell4 cell ${setStylingIfActive(1, 1, 'blue-cell')}`}>cell4</div>
-      <div className={`cell5 cell ${setStylingIfActive(1, 2, 'red-cell')}`}>cell5</div>
-      <div className={`cell6 cell ${setStylingIfActive(2, 0, 'blue-cell')}`}>cell6</div>
-      <div className={`cell7 cell ${setStylingIfActive(2, 1, 'red-cell')}`}>cell7</div>
-      <div className={`cell8 cell ${setStylingIfActive(2, 2, 'blue-cell')}`}>cell8</div>
-    </div>
-  );
+  //<h1>{router.query.a}</h1>
+  return <div style={getParentStyle()}>{getBoardElements()}</div>;
 }
