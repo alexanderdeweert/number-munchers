@@ -22,11 +22,10 @@ import {
   setBoard,
 } from "../redux/board";
 import { AppState } from "../store";
-// import styles from "../styles/Home.module.css";
 
 export default function Play() {
   const router = useRouter();
-  const { name, gameType } = router.query;
+  const { name, gameType, numCols, numRows } = router.query;
   const board = useSelector((state: AppState) => state.board.board);
   const dispatch = useDispatch();
   const timer = interval(1000);
@@ -83,7 +82,6 @@ export default function Play() {
         dispatch(setRightButtonPressed());
         dispatch(moveRight());
       } else if (event.keyCode === 32 && !spaceButtonPressed) {
-        console.log("space");
         dispatch(setSpaceButtonPressed());
         let row = activeCellY;
         let col = activeCellX;
@@ -134,18 +132,47 @@ export default function Play() {
 
   //Board init
   useEffect(() => {
-    dispatch(
-      setBoard({
-        board: [
-          [0, 0, 0, 0, 0, 0],
-          [0, 0, 0, 0, 0, 0],
-          [0, 0, 0, 0, 0, 0],
-          [0, 0, 0, 0, 0, 0],
-          [0, 0, 0, 0, 0, 0],
-          [0, 0, 0, 0, 0, 0],
-        ],
-      })
-    );
+    /**
+     * numRows and numCols were passed in from game config page (index)
+     * If we didnt click to get here from homepage (ie; refreshed or direct link)
+     * then the board defaults to 3x3 and the state is reset.
+     *
+     * One possible way to mitigate this is to store and re-hydrate the state.
+     */
+    let parsedRows: number | undefined;
+    let parsedCols: number | undefined;
+    //These types will be strings if they're passed in from query params
+    if (typeof numRows === "string" && typeof numCols === "string") {
+      parsedRows = parseInt(numRows);
+      parsedCols = parseInt(numCols);
+    }
+    //Or we just set to the default board dims, 3x3 (have to do this until we
+    //figure out how to store the redux state to localstorage to mitigate refresh
+    //or direct link)
+    let board: Array<Array<number | String>> = [];
+    for (let i = 0; i < (parsedRows ?? 3); i++) {
+      let row: Array<number | String> = [];
+      for (let j = 0; j < (parsedCols ?? 3); j++) {
+        row.push(Math.floor(1 + Math.random() * 10));
+      }
+      board.push(row);
+    }
+    console.log(board);
+    dispatch(setBoard({ board: board }));
+
+    //Otherwise we initialize a defualt board (maybe remove)
+    // dispatch(
+    //   setBoard({
+    //     board: [
+    //       [0, 0, 0, 0, 0, 0],
+    //       [0, 0, 0, 0, 0, 0],
+    //       [0, 0, 0, 0, 0, 0],
+    //       [0, 0, 0, 0, 0, 0],
+    //       [0, 0, 0, 0, 0, 0],
+    //       [0, 0, 0, 0, 0, 0],
+    //     ],
+    //   })
+    // );
 
     sub.add(
       timer.subscribe((i) => {
@@ -188,7 +215,6 @@ export default function Play() {
 
   function getBoardElements() {
     let results = [];
-    let cellCount = 0;
     for (let i = 0; i < board.length; i++) {
       const row = board[i];
       for (let j = 0; j < row.length; j++) {
@@ -210,7 +236,6 @@ export default function Play() {
             {element}
           </div>
         );
-        cellCount++;
       }
     }
     return results;

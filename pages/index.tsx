@@ -15,6 +15,8 @@ export default function Home() {
 
   const [name, setName] = useState("");
   const [gameType, setGameType] = useState(GameType.Multiples);
+  const [numCols, setNumCols] = useState(6);
+  const [numRows, setNumRows] = useState(5);
   const router = useRouter();
 
   function handleNameInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -29,7 +31,12 @@ export default function Home() {
 
   function handleStartClick() {
     return () => {
-      let params: ParsedUrlQueryInput = { name: name, gameType: gameType };
+      let params: ParsedUrlQueryInput = {
+        name: name,
+        gameType: gameType,
+        numCols: numCols,
+        numRows: numRows,
+      };
       router.push(
         {
           pathname: "play",
