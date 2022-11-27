@@ -25,8 +25,15 @@ import { AppState } from "../store";
 // import styles from "../styles/Home.module.css";
 
 export default function Play() {
-  console.log("~~ new function");
-  // const boardCount = useSelector((state: AppState) => state.board.value)
+  const router = useRouter();
+  const { name, gameType } = router.query;
+  const board = useSelector((state: AppState) => state.board.board);
+  const dispatch = useDispatch();
+  const timer = interval(1000);
+  const sub = new Subscription();
+  const [activeCellClass, setActiveCellClass] = useState("purple-cell");
+  const [tileWidth, setTileWidth] = useState(100);
+  const [tileHeight, setTileHeight] = useState(100);
   const upButtonPressed = useSelector(
     (state: AppState) => state.board.upButtonPressed
   );
@@ -51,13 +58,6 @@ export default function Play() {
   const validInputKeys = useSelector(
     (state: AppState) => state.board.validInputKeys
   );
-  const board = useSelector((state: AppState) => state.board.board);
-  const dispatch = useDispatch();
-  const timer = interval(1000);
-  const sub = new Subscription();
-  const [activeCellClass, setActiveCellClass] = useState("purple-cell");
-  const [tileWidth, setTileWidth] = useState(50);
-  const [tileHeight, setTileHeight] = useState(50);
 
   let keyPressedEventHandler = (event: any) => {
     if (event.key) {
@@ -137,9 +137,12 @@ export default function Play() {
     dispatch(
       setBoard({
         board: [
-          [0, 0, 0],
-          [0, 0, 0],
-          [0, 0, 0],
+          [0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0],
         ],
       })
     );
@@ -201,6 +204,8 @@ export default function Play() {
               gridRow: `${i + 1}/${i + 2}`,
               gridColumn: `${j + 1}/${j + 2}`,
             }}
+            key={`${i}#${j}`}
+            id={`${i}#${j}`}
           >
             {element}
           </div>
@@ -210,8 +215,7 @@ export default function Play() {
     }
     return results;
   }
-  const router = useRouter();
-  const { name, gameType } = router.query;
+
   /**
    * I need to render a game board via state (not going into redux for this - maybe next project)
    * We can maybe store the state in just a regular old JSON object :think:
