@@ -4,15 +4,15 @@ import { SetStateAction, useState } from "react";
 import { useRouter } from "next/router";
 import { ParsedUrlQueryInput } from "querystring";
 
-export default function Home() {
-  enum GameType {
-    Multiples = "multiples",
-    Factors = "factors",
-    Primes = "primes",
-    Equality = "equality",
-    Inequality = "inequality",
-  }
+export enum GameType {
+  Multiples = "multiples",
+  Factors = "factors",
+  Primes = "primes",
+  Equality = "equality",
+  Inequality = "inequality",
+}
 
+export default function Home() {
   const [name, setName] = useState("");
   const [gameType, setGameType] = useState(GameType.Multiples);
   const [numCols, setNumCols] = useState(6);

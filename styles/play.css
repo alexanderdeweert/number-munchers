@@ -2,16 +2,26 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-.blue-cell {
-  background-color: blue;
-  color: white;
-}
-.green-cell {
-  background-color: green;
+  /* border: 3px;
+  border-style: solid;
+  border-color: magenta; */
+  background-color: black;
   color: white;
 }
 .purple-cell {
   background-color: purple;
   color: white;
+}
+.message {
+  display: flex;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 350px;
+  height: 150px;
+  background-color: black;
+  color: cyan;
+  border: 4px;
+  border-style: dashed;
 }

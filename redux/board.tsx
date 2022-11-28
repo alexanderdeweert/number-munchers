@@ -9,8 +9,12 @@ export interface BoardState {
   spaceButtonPressed: boolean;
   activeCell: [number, number];
   validInputKeys: Array<String | number>;
-  board: Array<Array<number | String | undefined>>;
   lives: number;
+  level: number;
+  messages: Array<String>;
+  answersRemaining: number;
+  boardInitialized: boolean;
+  board: Array<Array<number | String | undefined>>;
 }
 
 const initialState: BoardState = {
@@ -21,8 +25,12 @@ const initialState: BoardState = {
   spaceButtonPressed: false,
   activeCell: [0, 0],
   validInputKeys: ["w", "a", "s", "d", 32],
-  board: [[]],
   lives: 5,
+  level: 2,
+  messages: [],
+  answersRemaining: 0,
+  boardInitialized: false,
+  board: [[]],
 };
 
 export const boardSlice = createSlice({
@@ -105,9 +113,34 @@ export const boardSlice = createSlice({
       }>
     ) => {
       state.board = action.payload.board;
+      state.boardInitialized = true;
     },
     decrementLives: (state) => {
       state.lives -= 1;
+    },
+    incrementLevel: (state) => {
+      state.level += 1;
+    },
+    setLevel: (state, action: PayloadAction<{ level: number }>) => {
+      state.level = action.payload.level;
+    },
+    pushMessage: (state, action: PayloadAction<{ message: String }>) => {
+      state.messages.push(action.payload.message);
+    },
+    popMessaage: (state) => {
+      state.messages.pop();
+    },
+    setAnswersRemaining: (
+      state,
+      action: PayloadAction<{ remaining: number }>
+    ) => {
+      state.answersRemaining = action.payload.remaining;
+    },
+    decrementAnswersRemaining: (state) => {
+      state.answersRemaining -= 1;
+    },
+    incrementAnswersRemaining: (state) => {
+      state.answersRemaining += 1;
     },
   },
 });
@@ -130,5 +163,11 @@ export const {
   moveRight,
   setBoard,
   decrementLives,
+  pushMessage,
+  popMessaage,
+  setAnswersRemaining,
+  incrementAnswersRemaining,
+  decrementAnswersRemaining,
+  incrementLevel,
 } = boardSlice.actions;
 export default boardSlice.reducer;
