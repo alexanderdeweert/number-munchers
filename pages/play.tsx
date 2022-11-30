@@ -297,9 +297,10 @@ export default function Play() {
         let element = row[j];
         results.push(
           <div
-            className={`cell ${setStylingIfActive(i, j)} ${
-              highlightIfCheating(element) ? "cheating" : "not-cheating"
-            }`}
+            className={`cell ${setStylingIfActive(i, j)}`}
+            // className={`cell ${setStylingIfActive(i, j)} ${
+            //   highlightIfCheating(element) ? "cheating" : "not-cheating"
+            // }`}
             style={{
               gridRow: `${i + 1}/${i + 2}`,
               gridColumn: `${j + 1}/${j + 2}`,
