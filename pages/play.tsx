@@ -309,6 +309,7 @@ export default function Play() {
           className={`text-center text-2xl mb-5 font-bold text-cyan-500 mt-10 ${
             i === numLives - 1 ? "mr-0" : "mr-5"
           }`}
+          key={i}
         >
           {"(◡‿◡✿)"}
         </h2>
