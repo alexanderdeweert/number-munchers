@@ -14,6 +14,8 @@ export interface BoardState {
   messages: Array<String>;
   answersRemaining: number;
   boardInitialized: boolean;
+  numRows: number;
+  numCols: number;
   board: Array<Array<number | String | undefined>>;
 }
 
@@ -30,6 +32,8 @@ const initialState: BoardState = {
   messages: [],
   answersRemaining: 0,
   boardInitialized: false,
+  numRows: 5,
+  numCols: 6,
   board: [[]],
 };
 
@@ -141,6 +145,12 @@ export const boardSlice = createSlice({
     },
     incrementAnswersRemaining: (state) => {
       state.answersRemaining += 1;
+    },
+    setNumRows: (state, action: PayloadAction<{ rows: number }>) => {
+      state.numRows = action.payload.rows;
+    },
+    setNumCols: (state, action: PayloadAction<{ cols: number }>) => {
+      state.numCols = action.payload.cols;
     },
   },
 });

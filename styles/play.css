@@ -12,6 +12,9 @@
   background-color: purple;
   color: white;
 }
+.cheating {
+  color: chartreuse;
+}
 .message {
   display: flex;
   position: absolute;
