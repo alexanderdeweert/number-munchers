@@ -320,10 +320,13 @@ export default function Play() {
 
   function renderNextMessageElement() {
     return [
-      <h1 className="text-center text-2xl font-bold text-cyan-500">
+      <h1
+        className="text-center text-2xl font-bold text-cyan-500"
+        key="messageElement"
+      >
         {peekMessages}
       </h1>,
-      <h2>Press space to continue</h2>,
+      <h2 key="pressSpaceElementKey">Press space to continue</h2>,
     ];
   }
 
