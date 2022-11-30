@@ -401,7 +401,7 @@ export default function Play() {
         {getFormattedGameTypeTitle(resolvedGameType)} of {level}
       </h1>
       <h3 className="text-center mb-5 font-bold text-cyan-500">
-        {name?.length ? name : "Muncher"}'s Game
+        {name?.length ? name : "Muncher"}&apos;s Game
       </h3>
       <div className="relative" style={getParentStyle()}>
         {getBoardElements()}
