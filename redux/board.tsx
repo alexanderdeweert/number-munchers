@@ -16,6 +16,7 @@ export interface BoardState {
   boardInitialized: boolean;
   numRows: number;
   numCols: number;
+  primes: Array<number>;
   board: Array<Array<number | String | undefined>>;
 }
 
@@ -34,6 +35,7 @@ const initialState: BoardState = {
   boardInitialized: false,
   numRows: 5,
   numCols: 6,
+  primes: [],
   board: [[]],
 };
 
@@ -152,6 +154,9 @@ export const boardSlice = createSlice({
     setNumCols: (state, action: PayloadAction<{ cols: number }>) => {
       state.numCols = action.payload.cols;
     },
+    setPrimes: (state, action: PayloadAction<{ primes: Array<number> }>) => {
+      state.primes = action.payload.primes;
+    },
   },
 });
 
@@ -179,5 +184,6 @@ export const {
   incrementAnswersRemaining,
   decrementAnswersRemaining,
   incrementLevel,
+  setPrimes,
 } = boardSlice.actions;
 export default boardSlice.reducer;

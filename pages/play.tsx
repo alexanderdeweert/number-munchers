@@ -26,10 +26,10 @@ import {
   setAnswersRemaining,
   decrementAnswersRemaining,
   incrementLevel,
+  setPrimes,
 } from "../redux/board";
 import { AppState } from "../store";
 import { GameType } from ".";
-import { stringify } from "querystring";
 
 export default function Play() {
   const router = useRouter();
@@ -45,7 +45,7 @@ export default function Play() {
   //TODO: maybe resolve from state instead?
   //Especially if state can be re-hydrated from localstorage
   const [resolvedGameType, setResolvedGameType] = useState(
-    gameType ?? "multiples"
+    gameType ?? GameType.Multiples
   );
   const upButtonPressed = useSelector(
     (state: AppState) => state.board.upButtonPressed
@@ -91,6 +91,7 @@ export default function Play() {
   );
   const numRows = useSelector((state: AppState) => state.board.numRows);
   const numCols = useSelector((state: AppState) => state.board.numCols);
+  const primes = useSelector((state: AppState) => state.board.primes);
 
   let keyPressedEventHandler = (event: any) => {
     if (event.key) {
@@ -136,29 +137,7 @@ export default function Play() {
           dispatch(moveRight());
         } else if (event.keyCode === 32 && !spaceButtonPressed) {
           dispatch(setSpaceButtonPressed());
-          if (resolvedGameType === "multiples") {
-            if (typeof cellValue == "number" && cellValue % level == 0) {
-              console.log(`MUNCHED ${cellValue}, a multiple of: ${level}`);
-              dispatch(
-                updateBoardValue({
-                  row: activeCellY,
-                  column: activeCellX,
-                  value: undefined,
-                })
-              );
-              if (answersRemaining === 1) {
-                dispatch(pushMessage({ message: "Noice" }));
-              }
-              dispatch(decrementAnswersRemaining());
-            } else if (typeof cellValue !== "undefined") {
-              dispatch(
-                pushMessage({
-                  message: `${cellValue} is not a multiple of ${level}`,
-                })
-              );
-              dispatch(decrementLives());
-            }
-          }
+          handleSpacebarPressed();
         }
       }
     }
@@ -210,6 +189,11 @@ export default function Play() {
      *
      * One possible way to mitigate this is to store and re-hydrate the state.
      */
+
+    if (!primes.length) {
+      dispatch(setPrimes({ primes: getOneHundredPrimes() }));
+    }
+
     //Or we just set to the default board dims, 3x3 (have to do this until we
     //figure out how to store the redux state to localstorage to mitigate refresh
     //or direct link)
@@ -394,6 +378,106 @@ export default function Play() {
       cur = -1;
     }
     return minAnswers;
+  }
+
+  /**
+   * Generating factors:
+   *
+   * A factor is a whole number that divides another whole number without a remainder.
+   * For example, if we have 12. 2 divides 12 with remainder zero.
+   *
+   * Since every non-prime integer can be divided into a unqiue set of primes,
+   * its possible to find the prime factorization of a number, and then use
+   * every combination of those factors to come up with all possible factors of another.
+   *
+   * For example. The prime factorization of 12 is:
+   * [ 2, 2, 3 ]
+   *
+   * Then we can use combinatorics to find all possible factors.
+   * In this case we do:
+   * 3 choose 1
+   * 3 choose 2
+   * 3 choose 3 (will be the whole number itself
+   *
+   * So those factors are [ 1, 2, 3, 4, 6, 12 ]
+   */
+
+  function generatePrimeFactors(num: number) {
+    //If num is prime just return itself
+    if (isPrime(num)) return [num];
+
+    //This checks if a number is indeed prime - lets generate all primes up to 100
+    let primeFactors = new Array<number>();
+    let divisor = primes[0];
+    let dividend = num;
+    let quotient = dividend / divisor;
+
+    let primeLimit = Math.ceil(num / 2);
+    let primeIndex = 0;
+    while (primes[primeIndex] <= primeLimit && primeIndex < primes.length) {
+      quotient = dividend / divisor;
+      if (quotient % 1 === 0) {
+        primeFactors.push(divisor);
+        dividend = quotient;
+      } else {
+        primeIndex++;
+        divisor = primes[primeIndex];
+      }
+    }
+    return primeFactors;
+  }
+
+  function getOneHundredPrimes() {
+    let result = [];
+    for (let i = 2; i <= 100; i++) {
+      if (isPrime(i)) {
+        result.push(i);
+      }
+    }
+    console.log(result);
+    return result;
+  }
+
+  function isPrime(num: number) {
+    if (num < 2) return false;
+    let rootFloor = Math.floor(Math.sqrt(num));
+    for (let i = 2; i <= rootFloor; i++) {
+      if (num % i == 0) return false;
+    }
+    return true;
+  }
+
+  function handleSpacebarPressed() {
+    switch (resolvedGameType) {
+      case GameType.Multiples:
+        if (typeof cellValue == "number" && cellValue % level == 0) {
+          console.log(`MUNCHED ${cellValue}, a multiple of: ${level}`);
+          clearActiveCell();
+          if (answersRemaining === 1) {
+            dispatch(pushMessage({ message: "Noice" }));
+          }
+          dispatch(decrementAnswersRemaining());
+        } else if (typeof cellValue !== "undefined") {
+          dispatch(
+            pushMessage({
+              message: `${cellValue} is not a multiple of ${level}`,
+            })
+          );
+          dispatch(decrementLives());
+          clearActiveCell();
+        }
+        break;
+    }
+  }
+
+  function clearActiveCell() {
+    dispatch(
+      updateBoardValue({
+        row: activeCellY,
+        column: activeCellX,
+        value: undefined,
+      })
+    );
   }
 
   return (
