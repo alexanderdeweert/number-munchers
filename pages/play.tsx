@@ -26,22 +26,25 @@ import {
   setAnswersRemaining,
   decrementAnswersRemaining,
   incrementLevel,
-  setPrimes,
+  setPrimeFactors,
+  setLevel,
+  generatePrimesAsync,
+  generatePrimeFactorsAsync,
 } from "../redux/board";
-import { AppState } from "../store";
+import { AppState, AppDispatch } from "../store";
 import { GameType } from ".";
 
 export default function Play() {
   const router = useRouter();
   const { name, gameType } = router.query;
   const board = useSelector((state: AppState) => state.board.board);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const timer = interval(1000);
   const sub = new Subscription();
   const [activeCellClass, setActiveCellClass] = useState("purple-cell");
   const [tileWidth, setTileWidth] = useState(100);
   const [tileHeight, setTileHeight] = useState(100);
-  const [won, setWon] = useState(false);
+  const [won, setWon] = useState(0);
   //TODO: maybe resolve from state instead?
   //Especially if state can be re-hydrated from localstorage
   const [resolvedGameType, setResolvedGameType] = useState(
@@ -116,7 +119,7 @@ export default function Play() {
             //So here we increment the level, etc, and then re-roll the board
             console.log("you win, would reset level");
             dispatch(incrementLevel());
-            setWon(true);
+            setWon(won + 1);
           }
         }
         return;
@@ -182,18 +185,31 @@ export default function Play() {
 
   //Board generation with query params
   useEffect(() => {
-    /**
-     * numRows and numCols were passed in from game config page (index)
-     * If we didnt click to get here from homepage (ie; refreshed or direct link)
-     * then the board defaults to 3x3 and the state is reset.
-     *
-     * One possible way to mitigate this is to store and re-hydrate the state.
-     */
-
-    if (!primes.length) {
-      dispatch(setPrimes({ primes: getOneHundredPrimes() }));
+    console.log("---###--- board init: useEffect");
+    if (typeof gameType == "string") {
+      setResolvedGameType(gameType);
     }
 
+    if (level >= 4 && resolvedGameType == GameType.Factors) {
+      //We need to regnerate the prime factors for every level
+      //since every non-prime has a unique prime factorization
+      //dispatch(setPrimeFactors({ primeFactors: generatePrimeFactors(level) }));
+      initializeFactorsBoard();
+    } else if (resolvedGameType == GameType.Multiples) {
+      initializeMultiplesBoard();
+    }
+  }, [won]);
+
+  async function initializeFactorsBoard() {
+    await dispatch(generatePrimesAsync());
+    await dispatch(generatePrimeFactorsAsync());
+    // let board: Array<Array<number | String>> = [];
+    // let numAnswers = 0;
+    // dispatch(setAnswersRemaining({ remaining: numAnswers }));
+    // dispatch(setBoard({ board: board }));
+  }
+
+  async function initializeMultiplesBoard() {
     //Or we just set to the default board dims, 3x3 (have to do this until we
     //figure out how to store the redux state to localstorage to mitigate refresh
     //or direct link)
@@ -237,9 +253,7 @@ export default function Play() {
     }
     dispatch(setAnswersRemaining({ remaining: numAnswers }));
     dispatch(setBoard({ board: board }));
-
-    console.log("---###--- board init: useEffect");
-  }, [level]);
+  }
 
   function setStylingIfActive(row: number, column: number): String | undefined {
     if (activeCellX == column && activeCellY == row) {
@@ -402,49 +416,66 @@ export default function Play() {
    * So those factors are [ 1, 2, 3, 4, 6, 12 ]
    */
 
-  function generatePrimeFactors(num: number) {
-    //If num is prime just return itself
-    if (isPrime(num)) return [num];
+  // function generatePrimeFactors(num: number) {
+  //   // let primes = [
+  //   //   2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67,
+  //   //   71, 73, 79, 83, 89, 97,
+  //   // ];
+  //   console.log("generating prime factors for: " + num);
+  //   console.log("primes length: " + primes.length);
+  //   //If num is prime just return itself
+  //   if (isPrime(num)) return [num];
 
-    //This checks if a number is indeed prime - lets generate all primes up to 100
-    let primeFactors = new Array<number>();
-    let divisor = primes[0];
-    let dividend = num;
-    let quotient = dividend / divisor;
+  //   //This checks if a number is indeed prime - lets generate all primes up to 100
+  //   let primeFactors = new Array<number>();
+  //   let divisor = primes[0];
+  //   let dividend = num;
+  //   let quotient = dividend / divisor;
 
-    let primeLimit = Math.ceil(num / 2);
-    let primeIndex = 0;
-    while (primes[primeIndex] <= primeLimit && primeIndex < primes.length) {
-      quotient = dividend / divisor;
-      if (quotient % 1 === 0) {
-        primeFactors.push(divisor);
-        dividend = quotient;
+  //   //Only need to check divisors up to half the num
+  //   //Otherwise it can't be a divisor
+  //   let primeLimit = Math.ceil(num / 2);
+  //   let primeIndex = 0;
+  //   while (primes[primeIndex] <= primeLimit && primeIndex < primes.length) {
+  //     quotient = dividend / divisor;
+  //     //Checks if the quotient was whole after dividing
+  //     if (quotient % 1 === 0) {
+  //       primeFactors.push(divisor);
+  //       dividend = quotient;
+  //     }
+  //     //The quotient wasn't whole, try the next prime
+  //     else {
+  //       primeIndex++;
+  //       divisor = primes[primeIndex];
+  //     }
+  //   }
+  //   return primeFactors;
+  // }
+
+  // function isPrime(num: number) {
+  //   if (num < 2) return false;
+  //   let rootFloor = Math.floor(Math.sqrt(num));
+  //   for (let i = 2; i <= rootFloor; i++) {
+  //     if (num % i == 0) return false;
+  //   }
+  //   return true;
+  // }
+
+  function nIndicesChooseK(arr: Array<number>, k: number) {
+    let result = new Array<Array<number>>();
+
+    let aux = (i: number, remain: number, acc: Array<number>) => {
+      if (remain > 0) {
+        for (let m = i + 1; m < arr.length; m++) {
+          aux(m, remain - 1, [...acc, m]);
+        }
       } else {
-        primeIndex++;
-        divisor = primes[primeIndex];
+        result.push(acc);
       }
-    }
-    return primeFactors;
-  }
+    };
 
-  function getOneHundredPrimes() {
-    let result = [];
-    for (let i = 2; i <= 100; i++) {
-      if (isPrime(i)) {
-        result.push(i);
-      }
-    }
-    console.log(result);
+    aux(-1, k, []);
     return result;
-  }
-
-  function isPrime(num: number) {
-    if (num < 2) return false;
-    let rootFloor = Math.floor(Math.sqrt(num));
-    for (let i = 2; i <= rootFloor; i++) {
-      if (num % i == 0) return false;
-    }
-    return true;
   }
 
   function handleSpacebarPressed() {

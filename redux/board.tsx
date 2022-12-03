@@ -1,5 +1,6 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { HYDRATE } from "next-redux-wrapper";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { AppState } from "../store";
+import { generatePrimeFactors, getOneHundredPrimes } from "./util/util";
 
 export interface BoardState {
   upButtonPressed: boolean;
@@ -17,6 +18,7 @@ export interface BoardState {
   numRows: number;
   numCols: number;
   primes: Array<number>;
+  primeFactors: Array<number>;
   board: Array<Array<number | String | undefined>>;
 }
 
@@ -29,13 +31,14 @@ const initialState: BoardState = {
   activeCell: [0, 0],
   validInputKeys: ["w", "a", "s", "d", 32],
   lives: 5,
-  level: 2,
+  level: 4,
   messages: [],
   answersRemaining: 0,
   boardInitialized: false,
   numRows: 5,
   numCols: 6,
   primes: [],
+  primeFactors: [],
   board: [[]],
 };
 
@@ -154,11 +157,40 @@ export const boardSlice = createSlice({
     setNumCols: (state, action: PayloadAction<{ cols: number }>) => {
       state.numCols = action.payload.cols;
     },
-    setPrimes: (state, action: PayloadAction<{ primes: Array<number> }>) => {
-      state.primes = action.payload.primes;
+    setPrimeFactors: (
+      state,
+      action: PayloadAction<{ primeFactors: Array<number> }>
+    ) => {
+      state.primeFactors = action.payload.primeFactors;
     },
   },
+  extraReducers(builder) {
+    builder.addCase(generatePrimesAsync.fulfilled, (state, action) => {
+      state.primes = action.payload.primes;
+    });
+    builder.addCase(generatePrimeFactorsAsync.fulfilled, (state, action) => {
+      state.primeFactors = action.payload.primeFactors;
+    });
+  },
 });
+
+export const generatePrimesAsync = createAsyncThunk(
+  "boardCounter/generatePrimesAsync",
+  async (_, { getState }) => {
+    let primes = getOneHundredPrimes();
+    return { primes: primes };
+  }
+);
+
+export const generatePrimeFactorsAsync = createAsyncThunk(
+  "boardCounter/generatePrimeFactorsAsync",
+  async (_, thunkAPI) => {
+    const { board } = thunkAPI.getState() as any;
+    const boardState = board as BoardState;
+    let primeFactors = generatePrimeFactors(board.level, board.primes);
+    return { primeFactors: primeFactors };
+  }
+);
 
 export const {
   setUpButtonPressed,
@@ -184,6 +216,7 @@ export const {
   incrementAnswersRemaining,
   decrementAnswersRemaining,
   incrementLevel,
-  setPrimes,
+  setLevel,
+  setPrimeFactors,
 } = boardSlice.actions;
 export default boardSlice.reducer;

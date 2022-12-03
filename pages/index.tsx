@@ -42,6 +42,12 @@ export default function Home() {
       );
     };
   }
+
+  // function getLevel() {
+  //   if (gameType == GameType.Multiples) return 2;
+  //   else if (gameType == GameType.Factors) return 4;
+  // }
+
   return (
     <div className="home-container border-dashed border-2 rounded-md ml-[auto] mr-[auto] w-3/4 px-5 py-5 mt-16 flex flex-col items-center">
       {/* Header */}
