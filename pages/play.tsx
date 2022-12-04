@@ -31,9 +31,11 @@ import {
   generateIndexCombinationsAsync,
   generateFactorsAnswersAsync,
   generateBoardWithAnswersAsync,
+  setLevelAsync,
 } from "../redux/board";
 import { AppState, AppDispatch } from "../store";
 import { GameType } from ".";
+import { isPrime } from "../redux/util/util";
 
 export default function Play() {
   const router = useRouter();
@@ -194,7 +196,7 @@ export default function Play() {
       setResolvedGameType(gameType);
     }
 
-    if (level >= 4 && resolvedGameType == GameType.Factors) {
+    if (resolvedGameType == GameType.Factors) {
       //We need to regnerate the prime factors for every level
       //since every non-prime has a unique prime factorization
       initializeFactorsBoard();
@@ -204,19 +206,23 @@ export default function Play() {
   }, [won]);
 
   async function initializeFactorsBoard() {
+    //First init (state is initialized to -1)
+    if (level < 4) {
+      await dispatch(setLevelAsync(4));
+    }
+    //Increment level when regenerating
+    else {
+      let curLevel = level;
+      while (isPrime(curLevel)) {
+        curLevel++;
+      }
+      await dispatch(setLevelAsync(curLevel));
+    }
     await dispatch(generatePrimesAsync());
     await dispatch(generatePrimeFactorsAsync());
     await dispatch(generateIndexCombinationsAsync());
     await dispatch(generateFactorsAnswersAsync());
     await dispatch(generateBoardWithAnswersAsync());
-    // let board: Array<Array<number | String>> = [];
-    // let numAnswers = 0;
-    // dispatch(setAnswersRemaining({ remaining: numAnswers }));
-    // dispatch(setBoard({ board: board }));
-    // let board: Array<Array<number | String>> = [];
-    // const numAnswers = generateBoardWithAnswers(board);
-    // dispatch(setAnswersRemaining({ remaining: numAnswers }));
-    // dispatch(setBoard({ board: board }));
   }
 
   async function initializeMultiplesBoard() {
@@ -344,23 +350,23 @@ export default function Play() {
   }
 
   //This only works for
-  function generateMultiplesAnswers(minAnswers: Map<String, number>) {
-    let colMultiplierMod = Math.floor(numCols / 10) + 1;
-    let rowMultiplierMod = Math.floor(numRows / 10) + 1;
-    let cur = -1;
-    for (let i = 0; i < 1; i++) {
-      while (cur % level !== 0) {
-        cur = Math.floor(1 + Math.random() * 100 + (level * 2 - 1));
-      }
-      let randColumn =
-        Math.floor(Math.random() * Math.pow(10, colMultiplierMod)) % numCols;
-      let randRow =
-        Math.floor(Math.random() * Math.pow(10, rowMultiplierMod)) % numRows;
-      let key = `${randRow}#${randColumn}`;
-      minAnswers.set(key, cur);
-      cur = -1;
-    }
-  }
+  // function generateMultiplesAnswers(minAnswers: Map<String, number>) {
+  //   let colMultiplierMod = Math.floor(numCols / 10) + 1;
+  //   let rowMultiplierMod = Math.floor(numRows / 10) + 1;
+  //   let cur = -1;
+  //   for (let i = 0; i < 1; i++) {
+  //     while (cur % level !== 0) {
+  //       cur = Math.floor(1 + Math.random() * 100 + (level * 2 - 1));
+  //     }
+  //     let randColumn =
+  //       Math.floor(Math.random() * Math.pow(10, colMultiplierMod)) % numCols;
+  //     let randRow =
+  //       Math.floor(Math.random() * Math.pow(10, rowMultiplierMod)) % numRows;
+  //     let key = `${randRow}#${randColumn}`;
+  //     minAnswers.set(key, cur);
+  //     cur = -1;
+  //   }
+  // }
 
   /**
    * Generating factors:
@@ -449,25 +455,46 @@ export default function Play() {
   // }
 
   function handleSpacebarPressed() {
+    if (cellValueIsValidAnswer()) {
+      //console.log(`MUNCHED ${cellValue}, a multiple of: ${level}`);
+      clearActiveCell();
+      if (answersRemaining === 1) {
+        dispatch(pushMessage({ message: "Noice" }));
+      }
+      dispatch(decrementAnswersRemaining());
+    } else if (typeof cellValue !== "undefined") {
+      dispatch(
+        pushMessage({
+          message: `${cellValue} is not ${gameTypeSingular()} ${level}`,
+        })
+      );
+      dispatch(decrementLives());
+      clearActiveCell();
+    }
+  }
+
+  function cellValueIsValidAnswer(): boolean {
+    if (typeof cellValue == "number") {
+      switch (resolvedGameType) {
+        case GameType.Multiples:
+          return cellValue % level == 0;
+        case GameType.Factors:
+          return (level / cellValue) % 1 === 0;
+        default:
+          return false;
+      }
+    }
+    return false;
+  }
+
+  function gameTypeSingular() {
     switch (resolvedGameType) {
       case GameType.Multiples:
-        if (typeof cellValue == "number" && cellValue % level == 0) {
-          console.log(`MUNCHED ${cellValue}, a multiple of: ${level}`);
-          clearActiveCell();
-          if (answersRemaining === 1) {
-            dispatch(pushMessage({ message: "Noice" }));
-          }
-          dispatch(decrementAnswersRemaining());
-        } else if (typeof cellValue !== "undefined") {
-          dispatch(
-            pushMessage({
-              message: `${cellValue} is not a multiple of ${level}`,
-            })
-          );
-          dispatch(decrementLives());
-          clearActiveCell();
-        }
-        break;
+        return "a multiple of";
+      case GameType.Factors:
+        return "a factor of";
+      default:
+        return "an answer for";
     }
   }
 

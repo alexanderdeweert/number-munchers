@@ -41,10 +41,9 @@ export function generatePrimeFactors(num: number, primes: Array<number>) {
   return primeFactors;
 }
 
-export function nIndicesChooseK(arr: Array<number>, k: number) {
+//Lets choose from 1 to level
+export function nIndicesChooseK(arr: Array<number>) {
   let result = new Array<Array<number>>();
-
-  console.log(`arr: ${arr}`);
 
   let aux = (i: number, remain: number, acc: Array<number>) => {
     if (remain > 0) {
@@ -56,7 +55,12 @@ export function nIndicesChooseK(arr: Array<number>, k: number) {
     }
   };
 
-  aux(-1, k, []);
+  //Altering this so that k passed in is the upper bound
+  //and we generate all nChooseK s.t. K is an integer in range [1..k]
+  for (let i = 1; i <= arr.length; i++) {
+    aux(-1, i, []);
+  }
+
   return result;
 }
 
@@ -66,7 +70,9 @@ export function generateFactorsAnswers(
   primeFactors: Array<number>,
   primeIndexCombinations: Array<Array<number>>
 ) {
-  let minAnswers = new Map<String, number>();
+  //let minAnswers = new Map<String, number>();
+  let minAnswers: { [key: string]: number } = {};
+  let answersSet = new Set<number>();
   let colMultiplierMod = Math.floor(numCols / 10) + 1;
   let rowMultiplierMod = Math.floor(numRows / 10) + 1;
 
@@ -78,15 +84,17 @@ export function generateFactorsAnswers(
    * For now we'll do just 2
    */
   console.log(`!! index combos ${primeIndexCombinations}`);
-  let answers = [];
+
   //For each index combination array, create the product sum of each index of primeFactors[i] * primeFactors[i-1]
   for (let i = 0; i < primeIndexCombinations.length; i++) {
     let curSum = 1;
     for (let j = 0; j < primeIndexCombinations[i].length; j++) {
       curSum *= primeFactors[primeIndexCombinations[i][j]];
     }
-    answers.push(curSum);
+    answersSet.add(curSum);
   }
+
+  let answers = Array.from(answersSet);
 
   for (let i = 0; i < answers.length; i++) {
     let cur = answers[i];
@@ -98,15 +106,17 @@ export function generateFactorsAnswers(
     let key = `${randRow}#${randColumn}`;
 
     //keep generating key until we dont have it
-    while (minAnswers.has(key)) {
-      randColumn =
-        Math.floor(Math.random() * Math.pow(10, colMultiplierMod)) % numCols;
-      randRow =
-        Math.floor(Math.random() * Math.pow(10, rowMultiplierMod)) % numRows;
-      key = `${randRow}#${randColumn}`;
-    }
 
-    minAnswers.set(key, cur);
+    // while (Object.keys(minAnswers).includes(key)) {
+    randColumn =
+      Math.floor(Math.random() * Math.pow(10, colMultiplierMod)) % numCols;
+    randRow =
+      Math.floor(Math.random() * Math.pow(10, rowMultiplierMod)) % numRows;
+    key = `${randRow}#${randColumn}`;
+    // }
+
+    //minAnswers.set(key, cur);
+    minAnswers[key] = cur;
   }
   return minAnswers;
 }
@@ -117,11 +127,11 @@ export function generateBoardWithAnswers(
   resolvedGameType: GameType,
   numRows: number,
   numCols: number,
-  level: number
+  level: number,
+  answerMap: { [key: string]: number }
 ) {
   let board = new Array<Array<number | String>>();
   let numAnswers = 0;
-  let answerMap: Map<String, number> = new Map<String, number>();
 
   //   if (resolvedGameType == GameType.Multiples) {
   //     generateMultiplesAnswers(answerMap);
@@ -133,9 +143,9 @@ export function generateBoardWithAnswers(
       //If we've already designated this row & col to have a valid answer
       //We populate that spot with the answer from a map
       let key = `${i}#${j}`;
-      if (answerMap && answerMap.has(key)) {
-        console.log(`answer map had ${key} for ${answerMap.get(key)}`);
-        row.push(answerMap.get(key)!);
+      if (answerMap && Object.keys(answerMap).includes(key)) {
+        console.log(`answer map had ${key} for ${answerMap[key]}`);
+        row.push(answerMap[key]);
         numAnswers++;
       } else {
         //Else just make anything

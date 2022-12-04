@@ -26,7 +26,7 @@ export interface BoardState {
   primes: Array<number>;
   primeFactors: Array<number>;
   primeIndexCombinations: Array<Array<number>>;
-  minAnswers: Map<String, number>;
+  minAnswers: { [key: string]: number };
   gameType: GameType;
   board: Array<Array<number | String | undefined>>;
 }
@@ -40,7 +40,7 @@ const initialState: BoardState = {
   activeCell: [0, 0],
   validInputKeys: ["w", "a", "s", "d", 32],
   lives: 5,
-  level: 12,
+  level: 48,
   messages: [],
   answersRemaining: 0,
   numRows: 5,
@@ -48,7 +48,7 @@ const initialState: BoardState = {
   primes: [],
   primeFactors: [],
   primeIndexCombinations: [[]],
-  minAnswers: new Map<String, number>(),
+  minAnswers: {},
   gameType: GameType.Factors,
   board: [[]],
 };
@@ -174,6 +174,7 @@ export const boardSlice = createSlice({
       }
     );
     builder.addCase(generateFactorsAnswersAsync.fulfilled, (state, action) => {
+      //state.minAnswers = action.payload.minAnswersMap;
       state.minAnswers = action.payload.minAnswersMap;
     });
     builder.addCase(
@@ -183,8 +184,20 @@ export const boardSlice = createSlice({
         state.board = action.payload.generatedBoard;
       }
     );
+    builder.addCase(setLevelAsync.fulfilled, (state, action) => {
+      state.level = action.payload.level;
+    });
   },
 });
+
+export const setLevelAsync = createAsyncThunk(
+  "boardCounter/setLevelAsync",
+  (level: number, thunkAPI) => {
+    const { board } = thunkAPI.getState() as any;
+    const boardState = board as BoardState;
+    return { level: level };
+  }
+);
 
 export const generatePrimesAsync = createAsyncThunk(
   "boardCounter/generatePrimesAsync",
@@ -209,7 +222,7 @@ export const generateIndexCombinationsAsync = createAsyncThunk(
   async (_, thunkAPI) => {
     const { board } = thunkAPI.getState() as any;
     const boardState = board as BoardState;
-    let indexCombinations = nIndicesChooseK(boardState.primeFactors, 2);
+    let indexCombinations = nIndicesChooseK(boardState.primeFactors);
     return { indexCombinations: indexCombinations };
   }
 );
@@ -238,7 +251,8 @@ export const generateBoardWithAnswersAsync = createAsyncThunk(
       boardState.gameType,
       boardState.numRows,
       boardState.numCols,
-      boardState.level
+      boardState.level,
+      boardState.minAnswers
     );
   }
 );
