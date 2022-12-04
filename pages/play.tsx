@@ -19,17 +19,18 @@ import {
   updateBoardValue,
   setSpaceButtonPressed,
   setSpaceButtonReleased,
-  setBoard,
   decrementLives,
   pushMessage,
   popMessaage,
   setAnswersRemaining,
   decrementAnswersRemaining,
   incrementLevel,
-  setPrimeFactors,
   setLevel,
   generatePrimesAsync,
   generatePrimeFactorsAsync,
+  generateIndexCombinationsAsync,
+  generateFactorsAnswersAsync,
+  generateBoardWithAnswersAsync,
 } from "../redux/board";
 import { AppState, AppDispatch } from "../store";
 import { GameType } from ".";
@@ -89,12 +90,15 @@ export default function Play() {
   const answersRemaining = useSelector(
     (state: AppState) => state.board.answersRemaining
   );
-  const boardInitialized = useSelector(
-    (state: AppState) => state.board.boardInitialized
-  );
   const numRows = useSelector((state: AppState) => state.board.numRows);
   const numCols = useSelector((state: AppState) => state.board.numCols);
   const primes = useSelector((state: AppState) => state.board.primes);
+  const primeFactors = useSelector(
+    (state: AppState) => state.board.primeFactors
+  );
+  const primeIndexCombinations = useSelector(
+    (state: AppState) => state.board.primeIndexCombinations
+  );
 
   let keyPressedEventHandler = (event: any) => {
     if (event.key) {
@@ -193,7 +197,6 @@ export default function Play() {
     if (level >= 4 && resolvedGameType == GameType.Factors) {
       //We need to regnerate the prime factors for every level
       //since every non-prime has a unique prime factorization
-      //dispatch(setPrimeFactors({ primeFactors: generatePrimeFactors(level) }));
       initializeFactorsBoard();
     } else if (resolvedGameType == GameType.Multiples) {
       initializeMultiplesBoard();
@@ -203,8 +206,15 @@ export default function Play() {
   async function initializeFactorsBoard() {
     await dispatch(generatePrimesAsync());
     await dispatch(generatePrimeFactorsAsync());
+    await dispatch(generateIndexCombinationsAsync());
+    await dispatch(generateFactorsAnswersAsync());
+    await dispatch(generateBoardWithAnswersAsync());
     // let board: Array<Array<number | String>> = [];
     // let numAnswers = 0;
+    // dispatch(setAnswersRemaining({ remaining: numAnswers }));
+    // dispatch(setBoard({ board: board }));
+    // let board: Array<Array<number | String>> = [];
+    // const numAnswers = generateBoardWithAnswers(board);
     // dispatch(setAnswersRemaining({ remaining: numAnswers }));
     // dispatch(setBoard({ board: board }));
   }
@@ -214,45 +224,10 @@ export default function Play() {
     //figure out how to store the redux state to localstorage to mitigate refresh
     //or direct link)
     let board: Array<Array<number | String>> = [];
-    let numAnswers = 0;
     //Generate at least 5 answers associated to a random row and col.
-
-    let answerMap: Map<String, number> | undefined;
-    //Multiples (TODO: do this for other game modes)
-    if (resolvedGameType == GameType.Multiples) {
-      answerMap = generateAnswersAtRandomLocations();
-    }
-
-    for (let i = 0; i < numRows; i++) {
-      let row: Array<number | String> = [];
-      for (let j = 0; j < numCols; j++) {
-        //If we've already designated this row & col to have a valid answer
-        //We populate that spot with the answer from a map
-        let key = `${i}#${j}`;
-        if (answerMap && answerMap.has(key)) {
-          console.log(`answer map had ${key} for ${answerMap.get(key)}`);
-          row.push(answerMap.get(key)!);
-          numAnswers++;
-        } else {
-          //Else just make anything
-          let generatedValue = Math.floor(
-            1 + Math.random() * 100 + (level * 2 - 1)
-          );
-          //If multiples
-          if (
-            resolvedGameType === GameType.Multiples &&
-            generatedValue % level === 0
-          ) {
-            numAnswers++;
-          }
-          //If primes etc
-          row.push(generatedValue);
-        }
-      }
-      board.push(row);
-    }
-    dispatch(setAnswersRemaining({ remaining: numAnswers }));
-    dispatch(setBoard({ board: board }));
+    // const numAnswers = generateBoardWithAnswers(board);
+    // dispatch(setAnswersRemaining({ remaining: numAnswers }));
+    // dispatch(setBoard({ board: board }));
   }
 
   function setStylingIfActive(row: number, column: number): String | undefined {
@@ -282,6 +257,11 @@ export default function Play() {
       //If multiples
       if (resolvedGameType == GameType.Multiples && element % level === 0) {
         return true;
+      } else if (
+        resolvedGameType === GameType.Factors &&
+        (level / element) % 1 === 0
+      ) {
+        return true;
       }
     }
     return false;
@@ -295,10 +275,10 @@ export default function Play() {
         let element = row[j];
         results.push(
           <div
-            className={`cell ${setStylingIfActive(i, j)}`}
-            // className={`cell ${setStylingIfActive(i, j)} ${
-            //   highlightIfCheating(element) ? "cheating" : "not-cheating"
-            // }`}
+            // className={`cell ${setStylingIfActive(i, j)}`}
+            className={`cell ${setStylingIfActive(i, j)} ${
+              highlightIfCheating(element) ? "cheating" : "not-cheating"
+            }`}
             style={{
               gridRow: `${i + 1}/${i + 2}`,
               gridColumn: `${j + 1}/${j + 2}`,
@@ -364,34 +344,22 @@ export default function Play() {
   }
 
   //This only works for
-  function generateAnswersAtRandomLocations() {
-    //Need to do this for larger levels > 10
-    //The multiplier in Math.random()*multiplier <--below
-    //must be one magnitude larger than numCols or numRows
+  function generateMultiplesAnswers(minAnswers: Map<String, number>) {
     let colMultiplierMod = Math.floor(numCols / 10) + 1;
     let rowMultiplierMod = Math.floor(numRows / 10) + 1;
-    //We will make a map of <row#col : value>
-    let minAnswers = new Map<String, number>();
     let cur = -1;
-    for (let i = 0; i < 4; i++) {
-      //TODO: Have to do this for other game modes
+    for (let i = 0; i < 1; i++) {
       while (cur % level !== 0) {
         cur = Math.floor(1 + Math.random() * 100 + (level * 2 - 1));
       }
-      //random row and col key
       let randColumn =
         Math.floor(Math.random() * Math.pow(10, colMultiplierMod)) % numCols;
       let randRow =
         Math.floor(Math.random() * Math.pow(10, rowMultiplierMod)) % numRows;
       let key = `${randRow}#${randColumn}`;
-      console.log(`key generated ${key} for answer ${cur}`);
-      //Repeating answers is fine
-      //Repeating keys is fine, it just means we won't get as many
-      //randomized pre-set answers - but this is an acceptable bug
       minAnswers.set(key, cur);
       cur = -1;
     }
-    return minAnswers;
   }
 
   /**
@@ -461,22 +429,24 @@ export default function Play() {
   //   return true;
   // }
 
-  function nIndicesChooseK(arr: Array<number>, k: number) {
-    let result = new Array<Array<number>>();
+  // function nIndicesChooseK(arr: Array<number>, k: number) {
+  //   let result = new Array<Array<number>>();
 
-    let aux = (i: number, remain: number, acc: Array<number>) => {
-      if (remain > 0) {
-        for (let m = i + 1; m < arr.length; m++) {
-          aux(m, remain - 1, [...acc, m]);
-        }
-      } else {
-        result.push(acc);
-      }
-    };
+  //   console.log(`arr: ${arr}`);
 
-    aux(-1, k, []);
-    return result;
-  }
+  //   let aux = (i: number, remain: number, acc: Array<number>) => {
+  //     if (remain > 0) {
+  //       for (let m = i + 1; m < arr.length; m++) {
+  //         aux(m, remain - 1, [...acc, m]);
+  //       }
+  //     } else {
+  //       result.push(acc);
+  //     }
+  //   };
+
+  //   aux(-1, k, []);
+  //   return result;
+  // }
 
   function handleSpacebarPressed() {
     switch (resolvedGameType) {
