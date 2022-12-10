@@ -32,6 +32,8 @@ import {
   generateFactorsAnswersAsync,
   generateBoardWithAnswersAsync,
   setLevelAsync,
+  generateMultiplesAnswersAsync,
+  setGameTypeAsync,
 } from "../redux/board";
 import { AppState, AppDispatch } from "../store";
 import { GameType } from ".";
@@ -39,7 +41,7 @@ import { isPrime } from "../redux/util/util";
 
 export default function Play() {
   const router = useRouter();
-  const { name, gameType } = router.query;
+  const { name, gameTypeQueryParam } = router.query;
   const board = useSelector((state: AppState) => state.board.board);
   const dispatch = useDispatch<AppDispatch>();
   const timer = interval(1000);
@@ -50,9 +52,9 @@ export default function Play() {
   const [won, setWon] = useState(0);
   //TODO: maybe resolve from state instead?
   //Especially if state can be re-hydrated from localstorage
-  const [resolvedGameType, setResolvedGameType] = useState(
-    gameType ?? GameType.Multiples
-  );
+  // const [resolvedGameType, setResolvedGameType] = useState(
+  //   gameType ?? GameType.Multiples
+  // );
   const upButtonPressed = useSelector(
     (state: AppState) => state.board.upButtonPressed
   );
@@ -91,6 +93,9 @@ export default function Play() {
   );
   const answersRemaining = useSelector(
     (state: AppState) => state.board.answersRemaining
+  );
+  const gameTypeSelector = useSelector(
+    (state: AppState) => state.board.gameType
   );
   const numRows = useSelector((state: AppState) => state.board.numRows);
   const numCols = useSelector((state: AppState) => state.board.numCols);
@@ -191,22 +196,21 @@ export default function Play() {
 
   //Board generation with query params
   useEffect(() => {
-    console.log("---###--- board init: useEffect");
-    if (typeof gameType == "string") {
-      setResolvedGameType(gameType);
-    }
-
-    if (resolvedGameType == GameType.Factors) {
-      //We need to regnerate the prime factors for every level
-      //since every non-prime has a unique prime factorization
-      initializeFactorsBoard();
-    } else if (resolvedGameType == GameType.Multiples) {
-      initializeMultiplesBoard();
+    console.log("---###--- board init: useEffect " + gameTypeQueryParam);
+    if (typeof gameTypeQueryParam == "string") {
+      if (gameTypeQueryParam === GameType.Multiples) {
+        initializeMultiplesBoard();
+      } else if (gameTypeQueryParam === GameType.Factors) {
+        console.log("~~~ game type was factors");
+        initializeFactorsBoard();
+      }
     }
   }, [won]);
 
   async function initializeFactorsBoard() {
     //First init (state is initialized to -1)
+    await dispatch(setGameTypeAsync(GameType.Factors));
+
     if (level < 4) {
       await dispatch(setLevelAsync(4));
     }
@@ -218,7 +222,9 @@ export default function Play() {
       }
       await dispatch(setLevelAsync(curLevel));
     }
-    await dispatch(generatePrimesAsync());
+    if (!primes.length) {
+      await dispatch(generatePrimesAsync());
+    }
     await dispatch(generatePrimeFactorsAsync());
     await dispatch(generateIndexCombinationsAsync());
     await dispatch(generateFactorsAnswersAsync());
@@ -226,14 +232,14 @@ export default function Play() {
   }
 
   async function initializeMultiplesBoard() {
-    //Or we just set to the default board dims, 3x3 (have to do this until we
-    //figure out how to store the redux state to localstorage to mitigate refresh
-    //or direct link)
-    let board: Array<Array<number | String>> = [];
-    //Generate at least 5 answers associated to a random row and col.
-    // const numAnswers = generateBoardWithAnswers(board);
-    // dispatch(setAnswersRemaining({ remaining: numAnswers }));
-    // dispatch(setBoard({ board: board }));
+    await dispatch(setGameTypeAsync(GameType.Multiples));
+    if (level < 2) {
+      await dispatch(setLevelAsync(2));
+    } else {
+      await dispatch(setLevelAsync(level + 1));
+    }
+    await dispatch(generateMultiplesAnswersAsync());
+    await dispatch(generateBoardWithAnswersAsync());
   }
 
   function setStylingIfActive(row: number, column: number): String | undefined {
@@ -261,10 +267,10 @@ export default function Play() {
   function highlightIfCheating(element: number | String | undefined) {
     if (typeof element == "number") {
       //If multiples
-      if (resolvedGameType == GameType.Multiples && element % level === 0) {
+      if (gameTypeSelector == GameType.Multiples && element % level === 0) {
         return true;
       } else if (
-        resolvedGameType === GameType.Factors &&
+        gameTypeSelector === GameType.Factors &&
         (level / element) % 1 === 0
       ) {
         return true;
@@ -349,111 +355,6 @@ export default function Play() {
     ];
   }
 
-  //This only works for
-  // function generateMultiplesAnswers(minAnswers: Map<String, number>) {
-  //   let colMultiplierMod = Math.floor(numCols / 10) + 1;
-  //   let rowMultiplierMod = Math.floor(numRows / 10) + 1;
-  //   let cur = -1;
-  //   for (let i = 0; i < 1; i++) {
-  //     while (cur % level !== 0) {
-  //       cur = Math.floor(1 + Math.random() * 100 + (level * 2 - 1));
-  //     }
-  //     let randColumn =
-  //       Math.floor(Math.random() * Math.pow(10, colMultiplierMod)) % numCols;
-  //     let randRow =
-  //       Math.floor(Math.random() * Math.pow(10, rowMultiplierMod)) % numRows;
-  //     let key = `${randRow}#${randColumn}`;
-  //     minAnswers.set(key, cur);
-  //     cur = -1;
-  //   }
-  // }
-
-  /**
-   * Generating factors:
-   *
-   * A factor is a whole number that divides another whole number without a remainder.
-   * For example, if we have 12. 2 divides 12 with remainder zero.
-   *
-   * Since every non-prime integer can be divided into a unqiue set of primes,
-   * its possible to find the prime factorization of a number, and then use
-   * every combination of those factors to come up with all possible factors of another.
-   *
-   * For example. The prime factorization of 12 is:
-   * [ 2, 2, 3 ]
-   *
-   * Then we can use combinatorics to find all possible factors.
-   * In this case we do:
-   * 3 choose 1
-   * 3 choose 2
-   * 3 choose 3 (will be the whole number itself
-   *
-   * So those factors are [ 1, 2, 3, 4, 6, 12 ]
-   */
-
-  // function generatePrimeFactors(num: number) {
-  //   // let primes = [
-  //   //   2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67,
-  //   //   71, 73, 79, 83, 89, 97,
-  //   // ];
-  //   console.log("generating prime factors for: " + num);
-  //   console.log("primes length: " + primes.length);
-  //   //If num is prime just return itself
-  //   if (isPrime(num)) return [num];
-
-  //   //This checks if a number is indeed prime - lets generate all primes up to 100
-  //   let primeFactors = new Array<number>();
-  //   let divisor = primes[0];
-  //   let dividend = num;
-  //   let quotient = dividend / divisor;
-
-  //   //Only need to check divisors up to half the num
-  //   //Otherwise it can't be a divisor
-  //   let primeLimit = Math.ceil(num / 2);
-  //   let primeIndex = 0;
-  //   while (primes[primeIndex] <= primeLimit && primeIndex < primes.length) {
-  //     quotient = dividend / divisor;
-  //     //Checks if the quotient was whole after dividing
-  //     if (quotient % 1 === 0) {
-  //       primeFactors.push(divisor);
-  //       dividend = quotient;
-  //     }
-  //     //The quotient wasn't whole, try the next prime
-  //     else {
-  //       primeIndex++;
-  //       divisor = primes[primeIndex];
-  //     }
-  //   }
-  //   return primeFactors;
-  // }
-
-  // function isPrime(num: number) {
-  //   if (num < 2) return false;
-  //   let rootFloor = Math.floor(Math.sqrt(num));
-  //   for (let i = 2; i <= rootFloor; i++) {
-  //     if (num % i == 0) return false;
-  //   }
-  //   return true;
-  // }
-
-  // function nIndicesChooseK(arr: Array<number>, k: number) {
-  //   let result = new Array<Array<number>>();
-
-  //   console.log(`arr: ${arr}`);
-
-  //   let aux = (i: number, remain: number, acc: Array<number>) => {
-  //     if (remain > 0) {
-  //       for (let m = i + 1; m < arr.length; m++) {
-  //         aux(m, remain - 1, [...acc, m]);
-  //       }
-  //     } else {
-  //       result.push(acc);
-  //     }
-  //   };
-
-  //   aux(-1, k, []);
-  //   return result;
-  // }
-
   function handleSpacebarPressed() {
     if (cellValueIsValidAnswer()) {
       //console.log(`MUNCHED ${cellValue}, a multiple of: ${level}`);
@@ -475,7 +376,7 @@ export default function Play() {
 
   function cellValueIsValidAnswer(): boolean {
     if (typeof cellValue == "number") {
-      switch (resolvedGameType) {
+      switch (gameTypeSelector) {
         case GameType.Multiples:
           return cellValue % level == 0;
         case GameType.Factors:
@@ -488,7 +389,7 @@ export default function Play() {
   }
 
   function gameTypeSingular() {
-    switch (resolvedGameType) {
+    switch (gameTypeSelector) {
       case GameType.Multiples:
         return "a multiple of";
       case GameType.Factors:
@@ -511,7 +412,7 @@ export default function Play() {
   return (
     <div className="play-container flex flex-col items-center">
       <h1 className="text-center text-3xl mb-2 font-bold text-cyan-500 mt-10">
-        {getFormattedGameTypeTitle(resolvedGameType)} of {level}
+        {getFormattedGameTypeTitle(gameTypeSelector)} of {level}
       </h1>
       <h3 className="text-center mb-5 font-bold text-cyan-500">
         {name?.length ? name : "Muncher"}&apos;s Game

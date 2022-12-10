@@ -121,6 +121,31 @@ export function generateFactorsAnswers(
   return minAnswers;
 }
 
+export function generateMultiplesAnswers(
+  numCols: number,
+  numRows: number,
+  level: number
+) {
+  let minAnswers: { [key: string]: number } = {};
+  let colMultiplierMod = Math.floor(numCols / 10) + 1;
+  let rowMultiplierMod = Math.floor(numRows / 10) + 1;
+  let cur = -1;
+  for (let i = 0; i < 4; i++) {
+    while (cur % level !== 0) {
+      cur = Math.floor(1 + Math.random() * 100 + (level * 2 - 1));
+    }
+    let randColumn =
+      Math.floor(Math.random() * Math.pow(10, colMultiplierMod)) % numCols;
+    let randRow =
+      Math.floor(Math.random() * Math.pow(10, rowMultiplierMod)) % numRows;
+    let key = `${randRow}#${randColumn}`;
+    minAnswers[key] = cur;
+    cur = -1;
+  }
+  console.log("generated: " + minAnswers);
+  return minAnswers;
+}
+
 //Next: Since this is dependent on the answerMap (in state)
 //this generation function will also need to be moved into an async thunk
 export function generateBoardWithAnswers(
@@ -133,6 +158,7 @@ export function generateBoardWithAnswers(
   let board = new Array<Array<number | String>>();
   let numAnswers = 0;
 
+  console.log(`util got answermap: ${answerMap}`);
   //   if (resolvedGameType == GameType.Multiples) {
   //     generateMultiplesAnswers(answerMap);
   //   }
@@ -143,7 +169,7 @@ export function generateBoardWithAnswers(
       //If we've already designated this row & col to have a valid answer
       //We populate that spot with the answer from a map
       let key = `${i}#${j}`;
-      if (answerMap && Object.keys(answerMap).includes(key)) {
+      if (Object.keys(answerMap).includes(key)) {
         console.log(`answer map had ${key} for ${answerMap[key]}`);
         row.push(answerMap[key]);
         numAnswers++;

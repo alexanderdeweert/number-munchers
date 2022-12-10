@@ -4,6 +4,7 @@ import { AppState } from "../store";
 import {
   generateBoardWithAnswers,
   generateFactorsAnswers,
+  generateMultiplesAnswers,
   generatePrimeFactors,
   getOneHundredPrimes,
   nIndicesChooseK,
@@ -40,7 +41,7 @@ const initialState: BoardState = {
   activeCell: [0, 0],
   validInputKeys: ["w", "a", "s", "d", 32],
   lives: 5,
-  level: 48,
+  level: -1,
   messages: [],
   answersRemaining: 0,
   numRows: 5,
@@ -49,7 +50,7 @@ const initialState: BoardState = {
   primeFactors: [],
   primeIndexCombinations: [[]],
   minAnswers: {},
-  gameType: GameType.Factors,
+  gameType: GameType.Multiples, //TODO: gotta set this async
   board: [[]],
 };
 
@@ -187,6 +188,15 @@ export const boardSlice = createSlice({
     builder.addCase(setLevelAsync.fulfilled, (state, action) => {
       state.level = action.payload.level;
     });
+    builder.addCase(
+      generateMultiplesAnswersAsync.fulfilled,
+      (state, action) => {
+        state.minAnswers = action.payload.minAnswersMap;
+      }
+    );
+    builder.addCase(setGameTypeAsync.fulfilled, (state, action) => {
+      state.gameType = action.payload.gameType;
+    });
   },
 });
 
@@ -242,6 +252,20 @@ export const generateFactorsAnswersAsync = createAsyncThunk(
   }
 );
 
+export const generateMultiplesAnswersAsync = createAsyncThunk(
+  "boardCounter/generateMultiplesAnswersAsync",
+  async (_, thunkAPI) => {
+    const { board } = thunkAPI.getState() as any;
+    const boardState = board as BoardState;
+    let minAnswersMap = generateMultiplesAnswers(
+      boardState.numCols,
+      boardState.numRows,
+      boardState.level
+    );
+    return { minAnswersMap: minAnswersMap };
+  }
+);
+
 export const generateBoardWithAnswersAsync = createAsyncThunk(
   "boardCounter/generateBoardWithAnswersAsync",
   async (_, thunkAPI) => {
@@ -254,6 +278,13 @@ export const generateBoardWithAnswersAsync = createAsyncThunk(
       boardState.level,
       boardState.minAnswers
     );
+  }
+);
+
+export const setGameTypeAsync = createAsyncThunk(
+  "boardCounter/setGameTypeAsync",
+  (gameType: GameType, thunkAPI) => {
+    return { gameType: gameType };
   }
 );
 
