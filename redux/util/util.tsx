@@ -75,6 +75,7 @@ export function generateFactorsAnswers(
   let answersSet = new Set<number>();
   let colMultiplierMod = Math.floor(numCols / 10) + 1;
   let rowMultiplierMod = Math.floor(numRows / 10) + 1;
+  let largest = Number.MIN_SAFE_INTEGER;
 
   /**
    * use nChooseK to get all combinations of factors indices
@@ -116,9 +117,65 @@ export function generateFactorsAnswers(
     // }
 
     //minAnswers.set(key, cur);
+    largest = Math.max(largest, cur);
     minAnswers[key] = cur;
   }
-  return minAnswers;
+  return { minAnswers: minAnswers, largest: largest };
+}
+
+export function generatePrimesAnswers(
+  numCols: number,
+  numRows: number,
+  level: number,
+  primes: Array<number>
+) {
+  let minAnswers: { [key: string]: number } = {};
+  let answersSet = new Set<number>();
+  let colMultiplierMod = Math.floor(numCols / 10) + 1;
+  let rowMultiplierMod = Math.floor(numRows / 10) + 1;
+  let largest = Number.MIN_SAFE_INTEGER;
+
+  //range is
+  // 0-level when level < 5
+  // 0-Math.ceil(level/5)
+  let lowerIndexBound = 0;
+  //at level 2 the range would be [0,0]
+  //at level 3, [0,1] ... level5 [0,3]
+  //At level 6+ [0, 4]
+  //level 10 [0,5]
+  //level 11
+  let upperIndexBound = level - 2;
+  if (level > 5) {
+    // level 5 is 1
+    upperIndexBound = 2 + Math.ceil((level + 1) / 5);
+    console.log(
+      `~~~ level is ${level} and the bounds are [${lowerIndexBound}, ${upperIndexBound}]`
+    );
+  }
+
+  //We now have a bounds range from which to choose an answer from the primes list
+  //Generate num answers in 5-15
+  let randomNumAnswers = 5 + Math.floor(Math.random() * 11);
+
+  //We now have the required number of answers, the range from which to choose
+  //Now generate random row and col, with a key
+  for (let i = 0; i < randomNumAnswers; i++) {
+    let randColumn =
+      Math.floor(Math.random() * Math.pow(10, colMultiplierMod)) % numCols;
+    let randRow =
+      Math.floor(Math.random() * Math.pow(10, rowMultiplierMod)) % numRows;
+    let key = `${randRow}#${randColumn}`;
+
+    //Using the upper bound range, get a random index
+    let randomIndex = Math.floor(Math.random() * upperIndexBound);
+
+    //Map the answer to the answers list
+    if (randomIndex < primes.length) {
+      largest = Math.max(largest, primes[randomIndex]);
+      minAnswers[key] = primes[randomIndex];
+    }
+  }
+  return { minAnswers: minAnswers, largestAnswer: largest };
 }
 
 export function generateMultiplesAnswers(
@@ -129,6 +186,7 @@ export function generateMultiplesAnswers(
   let minAnswers: { [key: string]: number } = {};
   let colMultiplierMod = Math.floor(numCols / 10) + 1;
   let rowMultiplierMod = Math.floor(numRows / 10) + 1;
+  let largest = Number.MIN_SAFE_INTEGER;
   let cur = -1;
   for (let i = 0; i < 4; i++) {
     while (cur % level !== 0) {
@@ -139,11 +197,12 @@ export function generateMultiplesAnswers(
     let randRow =
       Math.floor(Math.random() * Math.pow(10, rowMultiplierMod)) % numRows;
     let key = `${randRow}#${randColumn}`;
+    largest = Math.max(largest, cur);
     minAnswers[key] = cur;
     cur = -1;
   }
   console.log("generated: " + minAnswers);
-  return minAnswers;
+  return { minAnswers: minAnswers, largest: largest };
 }
 
 //Next: Since this is dependent on the answerMap (in state)
@@ -153,15 +212,12 @@ export function generateBoardWithAnswers(
   numRows: number,
   numCols: number,
   level: number,
-  answerMap: { [key: string]: number }
+  primes: Array<number>,
+  answerMap: { [key: string]: number },
+  largestAnswer: number
 ) {
   let board = new Array<Array<number | String>>();
   let numAnswers = 0;
-
-  console.log(`util got answermap: ${answerMap}`);
-  //   if (resolvedGameType == GameType.Multiples) {
-  //     generateMultiplesAnswers(answerMap);
-  //   }
 
   for (let i = 0; i < numRows; i++) {
     let row: Array<number | String> = [];
@@ -174,28 +230,39 @@ export function generateBoardWithAnswers(
         row.push(answerMap[key]);
         numAnswers++;
       } else {
-        //Else just make anything
-        let generatedValue = Math.floor(
-          1 + Math.random() * 100 + (level * 2 - 1)
-        );
-        //If multiples
-        if (
-          resolvedGameType === GameType.Multiples &&
-          generatedValue % level === 0
-        ) {
-          numAnswers++;
+        //Multiples
+        if (resolvedGameType === GameType.Multiples) {
+          let generatedValue = generateRandomValueInRange(1, largestAnswer + 5);
+          if (generatedValue % level === 0) {
+            numAnswers++;
+          }
+          row.push(generatedValue);
         }
-        //If factors
-        else if (
-          resolvedGameType === GameType.Factors &&
-          (level / generatedValue) % 1 === 0
-        ) {
-          numAnswers++;
+        //Factors
+        else if (resolvedGameType === GameType.Factors) {
+          let generatedValue = generateRandomValueInRange(1, largestAnswer + 5);
+          if ((level / generatedValue) % 1 === 0) {
+            numAnswers++;
+          }
+          row.push(generatedValue);
         }
-        row.push(generatedValue);
+        //Primes
+        else if (resolvedGameType === GameType.Primes) {
+          let generatedValue = generateRandomValueInRange(1, largestAnswer + 5);
+          while (isPrime(generatedValue)) {
+            generatedValue++;
+          }
+          row.push(generatedValue);
+        }
       }
     }
     board.push(row);
   }
   return { numAnswers, generatedBoard: board };
+}
+
+function generateRandomValueInRange(lo: number, hi: number) {
+  let result;
+  result = lo + Math.floor(Math.random() * hi);
+  return result ?? 0;
 }

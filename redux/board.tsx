@@ -6,6 +6,7 @@ import {
   generateFactorsAnswers,
   generateMultiplesAnswers,
   generatePrimeFactors,
+  generatePrimesAnswers,
   getOneHundredPrimes,
   nIndicesChooseK,
 } from "./util/util";
@@ -29,6 +30,7 @@ export interface BoardState {
   primeIndexCombinations: Array<Array<number>>;
   minAnswers: { [key: string]: number };
   gameType: GameType;
+  largestAnswer: number;
   board: Array<Array<number | String | undefined>>;
 }
 
@@ -50,7 +52,8 @@ const initialState: BoardState = {
   primeFactors: [],
   primeIndexCombinations: [[]],
   minAnswers: {},
-  gameType: GameType.Multiples, //TODO: gotta set this async
+  gameType: GameType.Multiples,
+  largestAnswer: Number.MIN_SAFE_INTEGER,
   board: [[]],
 };
 
@@ -177,6 +180,7 @@ export const boardSlice = createSlice({
     builder.addCase(generateFactorsAnswersAsync.fulfilled, (state, action) => {
       //state.minAnswers = action.payload.minAnswersMap;
       state.minAnswers = action.payload.minAnswersMap;
+      state.largestAnswer = action.payload.largest;
     });
     builder.addCase(
       generateBoardWithAnswersAsync.fulfilled,
@@ -192,10 +196,15 @@ export const boardSlice = createSlice({
       generateMultiplesAnswersAsync.fulfilled,
       (state, action) => {
         state.minAnswers = action.payload.minAnswersMap;
+        state.largestAnswer = action.payload.largest;
       }
     );
     builder.addCase(setGameTypeAsync.fulfilled, (state, action) => {
       state.gameType = action.payload.gameType;
+    });
+    builder.addCase(generatePrimesAnswersAsync.fulfilled, (state, action) => {
+      state.minAnswers = action.payload.minAnswersMap;
+      state.largestAnswer = action.payload.largestAnswer;
     });
   },
 });
@@ -242,13 +251,13 @@ export const generateFactorsAnswersAsync = createAsyncThunk(
   async (_, thunkAPI) => {
     const { board } = thunkAPI.getState() as any;
     const boardState = board as BoardState;
-    let minAnswersMap = generateFactorsAnswers(
+    const { minAnswers, largest } = generateFactorsAnswers(
       boardState.numCols,
       boardState.numRows,
       boardState.primeFactors,
       boardState.primeIndexCombinations
     );
-    return { minAnswersMap: minAnswersMap };
+    return { minAnswersMap: minAnswers, largest: largest };
   }
 );
 
@@ -257,12 +266,12 @@ export const generateMultiplesAnswersAsync = createAsyncThunk(
   async (_, thunkAPI) => {
     const { board } = thunkAPI.getState() as any;
     const boardState = board as BoardState;
-    let minAnswersMap = generateMultiplesAnswers(
+    const { minAnswers, largest } = generateMultiplesAnswers(
       boardState.numCols,
       boardState.numRows,
       boardState.level
     );
-    return { minAnswersMap: minAnswersMap };
+    return { minAnswersMap: minAnswers, largest: largest };
   }
 );
 
@@ -276,7 +285,9 @@ export const generateBoardWithAnswersAsync = createAsyncThunk(
       boardState.numRows,
       boardState.numCols,
       boardState.level,
-      boardState.minAnswers
+      boardState.primes,
+      boardState.minAnswers,
+      boardState.largestAnswer
     );
   }
 );
@@ -285,6 +296,24 @@ export const setGameTypeAsync = createAsyncThunk(
   "boardCounter/setGameTypeAsync",
   (gameType: GameType, thunkAPI) => {
     return { gameType: gameType };
+  }
+);
+
+export const generatePrimesAnswersAsync = createAsyncThunk(
+  "boardCounter/generatePrimesAnswersAsync",
+  (_, thunkAPI) => {
+    const { board } = thunkAPI.getState() as any;
+    const boardState = board as BoardState;
+    const { minAnswers, largestAnswer } = generatePrimesAnswers(
+      boardState.numCols,
+      boardState.numRows,
+      boardState.level,
+      boardState.primes
+    );
+    return {
+      minAnswersMap: minAnswers,
+      largestAnswer: largestAnswer,
+    };
   }
 );
 

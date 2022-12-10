@@ -34,6 +34,7 @@ import {
   setLevelAsync,
   generateMultiplesAnswersAsync,
   setGameTypeAsync,
+  generatePrimesAnswersAsync,
 } from "../redux/board";
 import { AppState, AppDispatch } from "../store";
 import { GameType } from ".";
@@ -42,7 +43,6 @@ import { isPrime } from "../redux/util/util";
 export default function Play() {
   const router = useRouter();
   const { name, gameTypeQueryParam } = router.query;
-  const board = useSelector((state: AppState) => state.board.board);
   const dispatch = useDispatch<AppDispatch>();
   const timer = interval(1000);
   const sub = new Subscription();
@@ -50,11 +50,8 @@ export default function Play() {
   const [tileWidth, setTileWidth] = useState(100);
   const [tileHeight, setTileHeight] = useState(100);
   const [won, setWon] = useState(0);
-  //TODO: maybe resolve from state instead?
-  //Especially if state can be re-hydrated from localstorage
-  // const [resolvedGameType, setResolvedGameType] = useState(
-  //   gameType ?? GameType.Multiples
-  // );
+
+  const board = useSelector((state: AppState) => state.board.board);
   const upButtonPressed = useSelector(
     (state: AppState) => state.board.upButtonPressed
   );
@@ -107,6 +104,35 @@ export default function Play() {
     (state: AppState) => state.board.primeIndexCombinations
   );
 
+  //Input listeners
+  useEffect(() => {
+    if (undefined !== window) {
+      window.addEventListener("keydown", keyPressedEventHandler);
+      window.addEventListener("keyup", keyReleasedEventHandler);
+    }
+
+    return () => {
+      window.removeEventListener("keydown", keyPressedEventHandler);
+      window.removeEventListener("keyup", keyReleasedEventHandler);
+    };
+  });
+
+  //Board generation with query params
+  useEffect(() => {
+    console.log("---###--- board init: useEffect " + gameTypeQueryParam);
+    if (typeof gameTypeQueryParam == "string") {
+      if (gameTypeQueryParam === GameType.Multiples) {
+        initializeMultiplesBoard();
+      } else if (gameTypeQueryParam === GameType.Factors) {
+        console.log("~~~ game type was factors");
+        initializeFactorsBoard();
+      } else if (gameTypeQueryParam === GameType.Primes) {
+        console.log("~~~ game type was primes");
+        initializePrimesBoard();
+      }
+    }
+  }, [won]);
+
   let keyPressedEventHandler = (event: any) => {
     if (event.key) {
       if (
@@ -129,7 +155,7 @@ export default function Play() {
             //TODO: Maybe set a boolean in the useEffect dependency array for the board reset state
             //So here we increment the level, etc, and then re-roll the board
             console.log("you win, would reset level");
-            dispatch(incrementLevel());
+            //dispatch(incrementLevel());
             setWon(won + 1);
           }
         }
@@ -181,32 +207,6 @@ export default function Play() {
     }
   };
 
-  //Input listeners
-  useEffect(() => {
-    if (undefined !== window) {
-      window.addEventListener("keydown", keyPressedEventHandler);
-      window.addEventListener("keyup", keyReleasedEventHandler);
-    }
-
-    return () => {
-      window.removeEventListener("keydown", keyPressedEventHandler);
-      window.removeEventListener("keyup", keyReleasedEventHandler);
-    };
-  });
-
-  //Board generation with query params
-  useEffect(() => {
-    console.log("---###--- board init: useEffect " + gameTypeQueryParam);
-    if (typeof gameTypeQueryParam == "string") {
-      if (gameTypeQueryParam === GameType.Multiples) {
-        initializeMultiplesBoard();
-      } else if (gameTypeQueryParam === GameType.Factors) {
-        console.log("~~~ game type was factors");
-        initializeFactorsBoard();
-      }
-    }
-  }, [won]);
-
   async function initializeFactorsBoard() {
     //First init (state is initialized to -1)
     await dispatch(setGameTypeAsync(GameType.Factors));
@@ -216,7 +216,7 @@ export default function Play() {
     }
     //Increment level when regenerating
     else {
-      let curLevel = level;
+      let curLevel = level + 1;
       while (isPrime(curLevel)) {
         curLevel++;
       }
@@ -239,6 +239,20 @@ export default function Play() {
       await dispatch(setLevelAsync(level + 1));
     }
     await dispatch(generateMultiplesAnswersAsync());
+    await dispatch(generateBoardWithAnswersAsync());
+  }
+
+  async function initializePrimesBoard() {
+    await dispatch(setGameTypeAsync(GameType.Primes));
+    if (level < 2) {
+      await dispatch(setLevelAsync(2));
+    } else {
+      await dispatch(setLevelAsync(level + 1));
+    }
+    if (!primes.length) {
+      await dispatch(generatePrimesAsync());
+    }
+    await dispatch(generatePrimesAnswersAsync());
     await dispatch(generateBoardWithAnswersAsync());
   }
 
@@ -272,6 +286,11 @@ export default function Play() {
       } else if (
         gameTypeSelector === GameType.Factors &&
         (level / element) % 1 === 0
+      ) {
+        return true;
+      } else if (
+        gameTypeSelector === GameType.Primes &&
+        primes.includes(element)
       ) {
         return true;
       }
@@ -315,7 +334,14 @@ export default function Play() {
   function getFormattedGameTypeTitle(gameType: string | string[] | undefined) {
     switch (typeof gameType) {
       case "string":
-        return gameType[0].toUpperCase().concat(gameType.substring(1));
+        if (gameType === GameType.Primes) {
+          return `${gameType[0]
+            .toUpperCase()
+            .concat(gameType.substring(1))} - Level ${level}`;
+        }
+        return `${gameType[0]
+          .toUpperCase()
+          .concat(gameType.substring(1))} of ${level}`;
       case "object":
         return gameType.join(" ");
       default:
@@ -381,6 +407,8 @@ export default function Play() {
           return cellValue % level == 0;
         case GameType.Factors:
           return (level / cellValue) % 1 === 0;
+        case GameType.Primes:
+          return primes.includes(cellValue);
         default:
           return false;
       }
@@ -412,7 +440,7 @@ export default function Play() {
   return (
     <div className="play-container flex flex-col items-center">
       <h1 className="text-center text-3xl mb-2 font-bold text-cyan-500 mt-10">
-        {getFormattedGameTypeTitle(gameTypeSelector)} of {level}
+        {getFormattedGameTypeTitle(gameTypeSelector)}
       </h1>
       <h3 className="text-center mb-5 font-bold text-cyan-500">
         {name?.length ? name : "Muncher"}&apos;s Game
