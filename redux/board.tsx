@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { GameType } from "../pages";
 import { AppState } from "../store";
+import { GameType } from "./util/enums";
 import {
   generateBoardWithAnswers,
   generateFactorsAnswers,

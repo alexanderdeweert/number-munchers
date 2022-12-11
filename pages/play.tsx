@@ -37,12 +37,12 @@ import {
   generatePrimesAnswersAsync,
 } from "../redux/board";
 import { AppState, AppDispatch } from "../store";
-import { GameType } from ".";
 import { isPrime } from "../redux/util/util";
+import { GameType } from "../redux/util/enums";
 
 export default function Play() {
   const router = useRouter();
-  const { name, gameTypeQueryParam } = router.query;
+  const { name, gameTypeQueryParam, cheating } = router.query;
   const dispatch = useDispatch<AppDispatch>();
   const timer = interval(1000);
   const sub = new Subscription();
@@ -119,7 +119,7 @@ export default function Play() {
 
   //Board generation with query params
   useEffect(() => {
-    console.log("---###--- board init: useEffect " + gameTypeQueryParam);
+    console.log("---###--- board init: useEffect " + cheating);
     if (typeof gameTypeQueryParam == "string") {
       if (gameTypeQueryParam === GameType.Multiples) {
         initializeMultiplesBoard();
@@ -279,7 +279,7 @@ export default function Play() {
   }
 
   function highlightIfCheating(element: number | String | undefined) {
-    if (typeof element == "number") {
+    if (typeof element == "number" && cheating == "true") {
       //If multiples
       if (gameTypeSelector == GameType.Multiples && element % level === 0) {
         return true;
@@ -392,7 +392,7 @@ export default function Play() {
     } else if (typeof cellValue !== "undefined") {
       dispatch(
         pushMessage({
-          message: `${cellValue} is not ${gameTypeSingular()} ${level}`,
+          message: `${cellValue} is not ${gameTypeSingular()}`,
         })
       );
       dispatch(decrementLives());
@@ -419,11 +419,13 @@ export default function Play() {
   function gameTypeSingular() {
     switch (gameTypeSelector) {
       case GameType.Multiples:
-        return "a multiple of";
+        return `a multiple of ${level}`;
       case GameType.Factors:
-        return "a factor of";
+        return `a factor of ${level}`;
+      case GameType.Primes:
+        return `prime`;
       default:
-        return "an answer for";
+        return `an answer for ${level}`;
     }
   }
 

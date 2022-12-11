@@ -1,22 +1,19 @@
 import Head from "next/head";
 import Image from "next/image";
-import { SetStateAction, useState } from "react";
+import React, { SetStateAction, useState } from "react";
 import { useRouter } from "next/router";
 import { ParsedUrlQueryInput } from "querystring";
-
-export enum GameType {
-  Multiples = "multiples",
-  Factors = "factors",
-  Primes = "primes",
-  Equality = "equality",
-  Inequality = "inequality",
-}
+import { GameType } from "../redux/util/enums";
 
 export default function Home() {
   const [name, setName] = useState("");
   const [gameType, setGameType] = useState(GameType.Multiples);
+  const [checked, setChecked] = useState(false);
   const router = useRouter();
 
+  function handleCheatingChanged() {
+    return setChecked(!checked);
+  }
   function handleNameInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     return setName(e.target.value);
   }
@@ -32,6 +29,7 @@ export default function Home() {
       let params: ParsedUrlQueryInput = {
         name: name,
         gameTypeQueryParam: gameType,
+        cheating: checked,
       };
       router.push(
         {
@@ -84,6 +82,23 @@ export default function Home() {
                 {getCapitalizedFirstCharString(GameType.Inequality)}
               </option>
             </select>
+          </div>
+
+          <div className="flex justify-left items-center pt-2 mb-4">
+            <label
+              className="text-white flex justify-left items-center"
+              htmlFor="cheatingcheckbox"
+            >
+              Cheat Mode Active:
+              <input
+                className="w-4 h-4 ml-2"
+                type="checkbox"
+                id="cheatingcheckbox"
+                value="cheating"
+                checked={checked}
+                onChange={handleCheatingChanged}
+              />
+            </label>
           </div>
 
           {/* Start Button */}

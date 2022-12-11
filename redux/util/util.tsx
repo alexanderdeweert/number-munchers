@@ -1,4 +1,4 @@
-import { GameType } from "../../pages";
+import { GameType } from "./enums";
 
 //UTIL (TODO: move util fns to their own file)
 export function isPrime(num: number) {
@@ -73,8 +73,6 @@ export function generateFactorsAnswers(
   //let minAnswers = new Map<String, number>();
   let minAnswers: { [key: string]: number } = {};
   let answersSet = new Set<number>();
-  let colMultiplierMod = Math.floor(numCols / 10) + 1;
-  let rowMultiplierMod = Math.floor(numRows / 10) + 1;
   let largest = Number.MIN_SAFE_INTEGER;
 
   /**
@@ -100,23 +98,10 @@ export function generateFactorsAnswers(
   for (let i = 0; i < answers.length; i++) {
     let cur = answers[i];
 
-    let randColumn =
-      Math.floor(Math.random() * Math.pow(10, colMultiplierMod)) % numCols;
-    let randRow =
-      Math.floor(Math.random() * Math.pow(10, rowMultiplierMod)) % numRows;
+    let randColumn = Math.floor(Math.random() * numCols);
+    let randRow = Math.floor(Math.random() * numRows);
     let key = `${randRow}#${randColumn}`;
 
-    //keep generating key until we dont have it
-
-    // while (Object.keys(minAnswers).includes(key)) {
-    randColumn =
-      Math.floor(Math.random() * Math.pow(10, colMultiplierMod)) % numCols;
-    randRow =
-      Math.floor(Math.random() * Math.pow(10, rowMultiplierMod)) % numRows;
-    key = `${randRow}#${randColumn}`;
-    // }
-
-    //minAnswers.set(key, cur);
     largest = Math.max(largest, cur);
     minAnswers[key] = cur;
   }
@@ -131,22 +116,10 @@ export function generatePrimesAnswers(
 ) {
   let minAnswers: { [key: string]: number } = {};
   let answersSet = new Set<number>();
-  let colMultiplierMod = Math.floor(numCols / 10) + 1;
-  let rowMultiplierMod = Math.floor(numRows / 10) + 1;
   let largest = Number.MIN_SAFE_INTEGER;
-
-  //range is
-  // 0-level when level < 5
-  // 0-Math.ceil(level/5)
   let lowerIndexBound = 0;
-  //at level 2 the range would be [0,0]
-  //at level 3, [0,1] ... level5 [0,3]
-  //At level 6+ [0, 4]
-  //level 10 [0,5]
-  //level 11
   let upperIndexBound = level - 2;
   if (level > 5) {
-    // level 5 is 1
     upperIndexBound = 2 + Math.ceil((level + 1) / 5);
     console.log(
       `~~~ level is ${level} and the bounds are [${lowerIndexBound}, ${upperIndexBound}]`
@@ -160,10 +133,8 @@ export function generatePrimesAnswers(
   //We now have the required number of answers, the range from which to choose
   //Now generate random row and col, with a key
   for (let i = 0; i < randomNumAnswers; i++) {
-    let randColumn =
-      Math.floor(Math.random() * Math.pow(10, colMultiplierMod)) % numCols;
-    let randRow =
-      Math.floor(Math.random() * Math.pow(10, rowMultiplierMod)) % numRows;
+    let randColumn = Math.floor(Math.random() * numCols);
+    let randRow = Math.floor(Math.random() * numRows);
     let key = `${randRow}#${randColumn}`;
 
     //Using the upper bound range, get a random index
@@ -184,18 +155,14 @@ export function generateMultiplesAnswers(
   level: number
 ) {
   let minAnswers: { [key: string]: number } = {};
-  let colMultiplierMod = Math.floor(numCols / 10) + 1;
-  let rowMultiplierMod = Math.floor(numRows / 10) + 1;
   let largest = Number.MIN_SAFE_INTEGER;
   let cur = -1;
   for (let i = 0; i < 4; i++) {
     while (cur % level !== 0) {
       cur = Math.floor(1 + Math.random() * 100 + (level * 2 - 1));
     }
-    let randColumn =
-      Math.floor(Math.random() * Math.pow(10, colMultiplierMod)) % numCols;
-    let randRow =
-      Math.floor(Math.random() * Math.pow(10, rowMultiplierMod)) % numRows;
+    let randColumn = Math.floor(Math.random() * numCols);
+    let randRow = Math.floor(Math.random() * numRows);
     let key = `${randRow}#${randColumn}`;
     largest = Math.max(largest, cur);
     minAnswers[key] = cur;
